@@ -63,10 +63,12 @@ body.mob header{padding:6px 8px;gap:6px}body.mob h1{font-size:14px}body.mob main
 <script>
 const SEED=[{"y": 2026, "m": 11, "holiday": [3, 23], "closed": [1, 7, 8, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2026, "m": 12, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27, 29, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 1, "holiday": [11], "closed": [1, 2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 2, "holiday": [11, 23], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 3, "holiday": [22], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 4, "holiday": [29], "closed": [3, 4, 10, 11, 17, 18, 24, 25], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 5, "holiday": [3, 4, 5], "closed": [1, 2, 8, 9, 15, 16, 22, 23, 29, 30], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 6, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 7, "holiday": [19], "closed": [3, 4, 10, 11, 17, 18, 24, 25, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 8, "holiday": [11], "closed": [1, 7, 8, 13, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 9, "holiday": [20, 23], "closed": [4, 5, 11, 12, 18, 19, 25, 26], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 10, "holiday": [11], "closed": [2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}];
 const ACCTS={"admin": "863399ec80d5e8fc45c2240fea7445b0bc7970d484c7b5cb83af72b39334db66", "sabikan": "00435d538bfb43a4e01d088de28aa192816b32f02877fccde6c85887ef9aea31"};
+const PUBJWK={"kty": "EC", "crv": "P-256", "x": "uhYQXp6PJw9duzk4l1R0VEBw-mU6_xXxnlXsEs2NmmU", "y": "pnMq_MDpKziiCdTbDFORk2uRyWwrwy0EdUemy9ls0K4"};
+const DOCS={"tos": {"t": "利用規約（ひな形）", "b": "【重要】この文書はひな形です。販売前に、専門家（弁護士など）の確認を受けてください。\n\n第1条（サービスの内容）\n「タイムポップ」（以下「本サービス」）は、就労継続支援事業所などの職員シフト・利用日・人員配置・請求額の目安を管理するための、ブラウザで使うソフトです。\n\n第2条（計算結果について）\n本サービスの人員配置・請求額などの計算は、目安です。基本単位、加算、単価、地域区分などの値は、利用者が自分で確認し、設定してください。実際の請求（国保連合会への請求など）や、指定基準を満たしているかの最終確認は、利用者（事業所）の責任で行ってください。計算結果によって生じた損害について、提供者は責任を負いません。\n\n第3条（データの保管）\n入力されたデータは、利用者の端末のブラウザ内にのみ保存されます。提供者は、これらのデータを受け取りません。端末の故障、ブラウザのデータ消去などでデータが失われることがあるため、利用者は定期的にバックアップを保存してください。\n\n第4条（料金・期間）\n利用料金は月額とし、ライセンスキーの有効期限まで利用できます。期限後は、更新のライセンスキーを入力するまで利用できません。\n\n第5条（禁止事項）\nライセンスキーの第三者への譲渡・共有、本サービスの複製・再販売、解析による不正な利用を禁止します。\n\n第6条（変更・終了）\n提供者は、報酬改定などに応じて内容を変更し、または本サービスを終了することがあります。\n\n（制定日：2026年11月26日／提供者：LICO（運営：株式会社かむらっど））"}, "pp": {"t": "プライバシーについて（ひな形）", "b": "【重要】この文書はひな形です。販売前に、専門家の確認を受けてください。\n\n1. 本サービスは、入力された職員・利用者の氏名や勤務・利用日などのデータを、提供者のサーバーに送信しません。データは、利用者の端末のブラウザ内にだけ保存されます。\n2. ライセンスキーの確認は、端末のブラウザ内で行い、キーの内容（事業所名・有効期限）を外部に送りません。\n3. 購入手続きの際にお預かりするお名前・メールアドレス・お支払い情報は、決済サービス（Stripe）と提供者が、契約の管理とライセンスキーの送付のためにのみ使います。\n4. 利用者の氏名など、個人情報を入力する場合は、事業所の個人情報の取扱いの規程に従い、端末の管理（パスワード、画面ロック、紛失対策）を行ってください。\n5. お問い合わせ先：LICO（運営：株式会社かむらっど）"}};
 const SALT='timepop-lico-';
 const KEY='lico_kanri_v1';
 const DEF={ftWeekH:40,ftDays:5,baseUsers:18,ratio:10,dayBasis:'base',minStaff:2,h916:6,days916:5,
- baseUnits:580,unitPrice:10.57,kaizen:8,rideUnits:21,
+ region:'',labor:0,baseUnits:580,unitPrice:10.57,kaizen:8,rideUnits:21,
  adds:[],caps:{}};
 const CAT=[
  {id:'sen3',name:'福祉専門職員配置等加算（Ⅰ）',u:15,per:'day',n:'常勤の福祉専門職員が35%以上'},
@@ -249,7 +251,11 @@ function vSet(mo){const s=S.settings;
  return `<div class="card"><b>人員配置</b><br><br>${F('ftWeekH','常勤の週の勤務時間(h)')}${F('ftDays','常勤の週の勤務日数')}${F('baseUsers','利用者数（基準）')}${F('minStaff','1日の最低出勤人数')}${F('h916','「9〜16」の人の1日(h)')}${F('days916','その人の週の出勤日数')}
  <label class="f">人員配置の区分（今の区分）<select data-set="ratio"><option value="10" ${s.ratio==10?'selected':''}>10:1（区分Ⅲ）</option><option value="7.5" ${s.ratio==7.5?'selected':''}>7.5:1（区分Ⅱ）</option></select></label>
  <label class="f">日ごとの必要時間に使う利用者数<select data-set="dayBasis"><option value="base" ${s.dayBasis==='base'?'selected':''}>基準の人数</option><option value="actual" ${s.dayBasis==='actual'?'selected':''}>その日の利用人数</option></select></label></div>
- <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)','number','0.1')}${F('rideUnits','送迎加算（片道・単位）','number')}
+ <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)','number','0.1')}<div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
+ <label class="f">地域区分（上乗せ割合）<select data-reg="1"><option value="">選ぶ</option>${[['1級地',20],['2級地',16],['3級地',15],['4級地',12],['5級地',10],['6級地',6],['7級地',3],['その他',0]].map(([n,r])=>`<option value="${r}" ${String(s.region)===String(r)&&s.region!==''?'selected':''}>${n}（${r}%）</option>`).join('')}</select></label>
+ <label class="f">人件費割合（%）<input class="i" type="number" data-set="labor" value="${s.labor}"></label>
+ <p class="note">単価＝10円×（1＋上乗せ割合×人件費割合）。<b class="warn">人件費割合は、サービスごとに告示で決まっています。ご自身の事業所の地域区分・人件費割合を、福岡市や告示で確認して入れてください（このアプリでは確定値を入れていません）。</b>
+ 現在の計算値：<b>${s.region===''||!s.labor?'—':(10*(1+(+s.region/100)*(s.labor/100))).toFixed(2)+'円'}</b>　<button data-applyprice="1">この値を単価に入れる</button></p></div>${F('rideUnits','送迎加算（片道・単位）','number')}
  <p class="note">最初の半年は580単位（所定990×984/1000を想定）、福岡市の単価10.57円は収支計画v14と同じ。送迎加算・処遇改善率は仮。</p>
  <b>加算を選ぶ</b>（チェックを入れた加算が請求に入ります）<div class="scroll">${catUI()}</div><br><b>その他の加算（自分で追加）</b><table class="t"><tr><th>名前</th><th>単位</th><th>数え方</th><th></th></tr>${s.adds.map((a,i)=>`<tr><td><input class="i" data-an="${i}" value="${esc(a.name)}"></td><td><input class="i" style="width:70px" type="number" data-au="${i}" value="${a.units}"></td><td><select data-ap="${i}"><option value="day" ${a.per==='day'?'selected':''}>利用日ごと</option><option value="trip" ${a.per==='trip'?'selected':''}>送迎1回ごと</option><option value="month" ${a.per==='month'?'selected':''}>利用者ごとに月1回</option></select></td><td><button data-adel="${i}">削除</button></td></tr>`).join('')}</table>
  <p><button id="aadd">＋加算を追加</button></p></div>
@@ -259,13 +265,31 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 // ---------- events ----------
 
 async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return null}}
+const ub=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
+async function verifyLicense(tok){try{tok=(tok||'').trim();const [a,b]=tok.split('.');if(!a||!b)return{ok:false,why:'キーの形が違います'};
+ const key=await crypto.subtle.importKey('jwk',PUBJWK,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
+ const good=await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},key,ub(b),ub(a));if(!good)return{ok:false,why:'ライセンスキーが正しくありません'};
+ const pl=JSON.parse(new TextDecoder().decode(ub(a)));const end=new Date(pl.exp+'T23:59:59');const left=Math.ceil((end-new Date())/86400000);
+ if(left<-7)return{ok:false,expired:true,pl,why:'有効期限（'+pl.exp+'）が過ぎています'};
+ return{ok:true,pl,left}}catch(e){return{ok:false,why:'ライセンスキーを確認できませんでした'}}}
+function expiredView(why){document.body.innerHTML=`<div class="lg"><div class="lgc"><h2>タイムポップ</h2><p>${why}</p><label>新しいライセンスキー</label><textarea id="lk" rows="4" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"></textarea><div class="er" id="ler"></div><button id="lkb">更新する</button></div></div>`;
+ $('#lkb').onclick=async()=>{const r=await verifyLicense($('#lk').value);if(r.ok){localStorage.setItem('tp_license',$('#lk').value.trim());sessionStorage.setItem('lico_in','1');location.reload()}else $('#ler').textContent=r.why}}
 function loginView(){
  document.body.innerHTML=`<div class="lg"><div class="lgc"><h2>タイムポップ</h2><p>LICO　シフト・利用日・請求管理</p>
+ <label>ライセンスキー（ご購入の方）</label><textarea id="lk" rows="3" placeholder="メールでお送りしたキーを貼り付け" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"></textarea>
+ <button id="lkb" style="margin-top:10px">キーで始める</button>
+ <div style="text-align:center;color:var(--mute);font-size:12px;margin:16px 0 0">── または（社内のIDで） ──</div>
  <label>ログインID</label><input id="lid" autocomplete="username" autocapitalize="off"><label>パスワード</label><input id="lpw" type="password" autocomplete="current-password">
- <div class="er" id="ler"></div><button id="lbtn">ログイン</button></div></div>`;
+ <div class="er" id="ler"></div><button id="lbtn">ログイン</button>
+ <p style="margin:14px 0 0;font-size:11px"><a href="#" id="tos">利用規約</a>　<a href="#" id="pp">プライバシー</a></p></div></div>`;
+ const enter=()=>{sessionStorage.setItem('lico_in','1');location.reload()};
+ $('#lkb').onclick=async()=>{const r=await verifyLicense($('#lk').value);if(r.ok){localStorage.setItem('tp_license',$('#lk').value.trim());enter()}else $('#ler').textContent=r.why};
  const go=async()=>{const id=$('#lid').value.trim(),pw=$('#lpw').value;if(!id||!pw){$('#ler').textContent='IDとパスワードを入れてください';return}
-  const v=await sha(SALT+id+'|'+pw);if(v&&ACCTS[id]===v){sessionStorage.setItem('lico_in','1');location.reload()}else{$('#ler').textContent='IDまたはパスワードが違います'}};
- $('#lbtn').onclick=go;$('#lpw').onkeydown=e=>{if(e.key==='Enter')go()}}
+  const v=await sha(SALT+id+'|'+pw);if(v&&ACCTS[id]===v){enter()}else{$('#ler').textContent='IDまたはパスワードが違います'}};
+ $('#lbtn').onclick=go;$('#lpw').onkeydown=e=>{if(e.key==='Enter')go()};
+ $('#tos').onclick=e=>{e.preventDefault();showDoc('tos')};$('#pp').onclick=e=>{e.preventDefault();showDoc('pp')}}
+function showDoc(k){const d=DOCS[k];const w=document.createElement('div');w.style.cssText='position:fixed;inset:0;z-index:99;background:#0007;display:flex;align-items:center;justify-content:center';
+ w.innerHTML=`<div class="card" style="max-width:640px;max-height:80vh;overflow:auto;white-space:pre-wrap;line-height:1.7;font-size:13px"><b style="font-size:16px">${d.t}</b>\n\n${d.b}\n\n<button id="dc">閉じる</button></div>`;document.body.appendChild(w);w.querySelector('#dc').onclick=()=>w.remove();w.onclick=e=>{if(e.target===w)w.remove()}}
 let popFor=null;
 function openPop(td){const kind=td.dataset.kind,opts=kind==='s'?SH:kind==='u'?UO:RO;const r=td.getBoundingClientRect();const p=$('#pop');
  p.innerHTML=opts.map(o=>`<button data-v="${o}">${o||'（空にする）'}</button>`).join('');p.style.display='block';
@@ -287,6 +311,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.dataset.adel){S.settings.adds.splice(+t.dataset.adel,1);ui();return}
  if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
   dl('﻿'+L.join('\n'),`LICO_請求_${mo.y}年${mo.m}月.csv`,'text/csv');return}
+ if(t.dataset.applyprice){const r=S.settings.region,l=S.settings.labor;if(r===''||!l){alert('地域区分と人件費割合を入れてください');return}S.settings.unitPrice=Math.round(10*(1+(r/100)*(l/100))*100)/100;ui();return}
  if(t.id==='qrb'){$('#qrm').style.display='flex';return}
  if(t.id==='qrc'||t.id==='qrm'){$('#qrm').style.display='none';return}
  if(t.id==='mobt'){document.body.classList.toggle('mob');try{localStorage.setItem('lico_mob',document.body.classList.contains('mob')?'1':'')}catch(e){}return}
@@ -303,6 +328,7 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.grp!==undefined){mo.users[+t.dataset.grp].group=t.value;ui();return}
  if(t.dataset.uname!==undefined){mo.users[+t.dataset.uname].name=t.value;ui();return}
  if(t.dataset.set){const k=t.dataset.set;S.settings[k]=(k==='dayBasis')?t.value:+t.value;ui();return}
+ if(t.dataset.reg){S.settings.region=t.value===''?'':+t.value;ui();return}
  if(t.dataset.con){const c=S.settings.cat[t.dataset.con]=S.settings.cat[t.dataset.con]||{};c.on=t.checked;ui();return}
  if(t.dataset.cun){const c=S.settings.cat[t.dataset.cun]=S.settings.cat[t.dataset.cun]||{};c.units=+t.value||0;ui();return}
  if(t.dataset.cnt){S.counts[t.dataset.cnt]=+t.value||0;ui();return}
@@ -311,11 +337,18 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.au!==undefined){S.settings.adds[+t.dataset.au].units=+t.value||0;ui();return}
  if(t.dataset.ap!==undefined){S.settings.adds[+t.dataset.ap].per=t.value;ui();return}});
 function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()}
+(async()=>{
+const lk=localStorage.getItem('tp_license');let LIC=null;
+if(!sessionStorage.getItem('lico_in')&&lk){const r=await verifyLicense(lk);if(r.ok)sessionStorage.setItem('lico_in','1');else if(r.expired){expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
+if(lk){const r=await verifyLicense(lk);if(r.ok)LIC=r;else if(r.expired){sessionStorage.removeItem('lico_in');expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
+window.LIC=LIC;
 if(!sessionStorage.getItem('lico_in')){loginView()}else{
 goToday(true);try{if(localStorage.getItem('lico_mob'))document.body.classList.add('mob')}catch(e){}
 if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
 ui();
+if(LIC&&LIC.left<=7){const b=document.createElement('div');b.style.cssText='background:#fff4d6;border-bottom:1px solid #e6c36a;padding:6px 14px;font-size:13px;text-align:center';b.textContent='ライセンスの期限まであと'+Math.max(0,LIC.left)+'日です（'+LIC.pl.exp+'）。更新のご案内をご確認ください。';document.body.prepend(b)}
 setInterval(()=>{const n=new Date(),k=n.getFullYear()+'-'+(n.getMonth()+1);if(S.lastMonth!==k){goToday(true);ui()}},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){const n=new Date(),k=n.getFullYear()+'-'+(n.getMonth()+1);if(S.lastMonth!==k){goToday(true);ui()}}});
 }
+})();
 </script></body></html>
