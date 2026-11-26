@@ -82,6 +82,28 @@ if(!S||!S.months){S={settings:JSON.parse(JSON.stringify(DEF)),months:JSON.parse(
 S.settings=Object.assign({},DEF,S.settings);S.settings.cat=S.settings.cat||{};S.counts=S.counts||{};
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=s=>document.querySelector(s);
+
+// ---------- 月の自動切り替え・保管・先の月の作成 ----------
+function jpHolidays(y,m){const H=new Set();const add=(mm,dd)=>{if(mm===m)H.add(dd)};
+ [[1,1],[2,11],[2,23],[4,29],[5,3],[5,4],[5,5],[8,11],[11,3],[11,23]].forEach(a=>add(a[0],a[1]));
+ const nth=(mm,n)=>{let c=0;for(let d=1;d<=31;d++){const dt=new Date(y,mm-1,d);if(dt.getMonth()!==mm-1)break;if(dt.getDay()===1&&++c===n)return d}};
+ add(1,nth(1,2));add(7,nth(7,3));add(9,nth(9,3));add(10,nth(10,2));
+ add(3,Math.floor(20.8431+0.242194*(y-1980)-Math.floor((y-1980)/4)));add(9,Math.floor(23.2488+0.242194*(y-1980)-Math.floor((y-1980)/4)));
+ // 振替休日（日曜の祝日の次の平日）
+ [...H].forEach(d=>{if(new Date(y,m-1,d).getDay()===0){let n=d+1;while(H.has(n))n++;H.add(n)}});
+ return [...H].filter(x=>x&&new Date(y,m-1,x).getMonth()===m-1).sort((a,b)=>a-b)}
+function newMonth(y,m,prev){const days=new Date(y,m,0).getDate();const hol=jpHolidays(y,m);const closed=[];
+ for(let d=1;d<=days;d++){const w=new Date(y,m-1,d).getDay();const off=w===0||w===6||(m===12&&d>=29)||(m===1&&d<=3)||(m===8&&d>=13&&d<=16);if(off)closed.push(d)}
+ return{y,m,holiday:hol,closed,
+  staff:(prev?prev.staff:[]).map(p=>({role:p.role,name:p.name,h:p.h,d:{}})),
+  users:(prev?prev.users:[]).map(u=>({group:u.group,name:u.name,u:{},r:{}}))}}
+function ensureMonth(y,m){let i=S.months.findIndex(x=>x.y===y&&x.m===m);if(i>=0)return i;
+ const key=y*12+m;let at=S.months.length;for(let k=0;k<S.months.length;k++)if(S.months[k].y*12+S.months[k].m>key){at=k;break}
+ const prev=S.months[Math.max(0,at-1)];S.months.splice(at,0,newMonth(y,m,prev));return at}
+function snapshot(mo){S.archive=S.archive||{};S.archive[mo.y+'-'+mo.m]={at:new Date().toISOString(),month:JSON.parse(JSON.stringify(mo)),bill:(()=>{const b=billing(mo);return{total:b.total,burden:b.burden,claim:b.claim,days:b.T.days}})()}}
+function goToday(auto){const n=new Date();const y=n.getFullYear(),m=n.getMonth()+1,k=y+'-'+m;
+ if(auto&&S.lastMonth&&S.lastMonth!==k){const [py,pm]=S.lastMonth.split('-').map(Number);const pi=S.months.findIndex(x=>x.y===py&&x.m===pm);if(pi>=0)snapshot(S.months[pi])}
+ S.mi=ensureMonth(y,m);S.lastMonth=k;save()}
 const dim=mo=>new Date(mo.y,mo.m,0).getDate();
 const wdOf=(mo,d)=>new Date(mo.y,mo.m-1,d).getDay();
 const isClosed=(mo,d)=>mo.closed.includes(d);
@@ -206,6 +228,8 @@ function vBill(mo){const b=billing(mo),s=S.settings;
 <div class="scroll">${countUI(mo)}</div>
  <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）×（1＋処遇改善${s.kaizen}%）×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・処遇改善率・単価は仮の値です。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
  <p><button id="csv">この月の請求をCSVで保存</button></p></div>`;return h}
+function archUI(){const a=S.archive||{};const ks=Object.keys(a).sort();if(!ks.length)return '<p class="note">まだ保管された月はありません。</p>';
+ return '<table class="t"><tr><th>月</th><th>保管した日時</th><th>請求額(10割)</th><th></th></tr>'+ks.map(k=>`<tr><td>${k.replace('-','年')}月</td><td>${a[k].at.slice(0,16).replace('T',' ')}</td><td>${yen(a[k].bill.total)}</td><td><button data-adl="${k}">ダウンロード</button></td></tr>`).join('')+'</table>'}
 function vSet(mo){const s=S.settings;
  const F=(k,l,t='number',st='')=>`<label class="f">${l}<input class="i" type="${t}" step="${st}" data-set="${k}" value="${s[k]}"></label>`;
  return `<div class="card"><b>人員配置</b><br><br>${F('ftWeekH','常勤の週の勤務時間(h)')}${F('ftDays','常勤の週の勤務日数')}${F('baseUsers','利用者数（基準）')}${F('minStaff','1日の最低出勤人数')}${F('h916','「9〜16」の人の1日(h)')}${F('days916','その人の週の出勤日数')}
@@ -215,6 +239,7 @@ function vSet(mo){const s=S.settings;
  <p class="note">最初の半年は580単位（所定990×984/1000を想定）、福岡市の単価10.57円は収支計画v14と同じ。送迎加算・処遇改善率は仮。</p>
  <b>加算を選ぶ</b>（チェックを入れた加算が請求に入ります）<div class="scroll">${catUI()}</div><br><b>その他の加算（自分で追加）</b><table class="t"><tr><th>名前</th><th>単位</th><th>数え方</th><th></th></tr>${s.adds.map((a,i)=>`<tr><td><input class="i" data-an="${i}" value="${esc(a.name)}"></td><td><input class="i" style="width:70px" type="number" data-au="${i}" value="${a.units}"></td><td><select data-ap="${i}"><option value="day" ${a.per==='day'?'selected':''}>利用日ごと</option><option value="trip" ${a.per==='trip'?'selected':''}>送迎1回ごと</option><option value="month" ${a.per==='month'?'selected':''}>利用者ごとに月1回</option></select></td><td><button data-adel="${i}">削除</button></td></tr>`).join('')}</table>
  <p><button id="aadd">＋加算を追加</button></p></div>
+ <div class="card"><b>毎月の保管</b><p class="note">月が変わると、前の月が自動で保管されます（この月の勤務・利用日・請求額のそのときの記録）。入力した月のデータは、いつでも月の選択から開けます。</p>${archUI()}</div>
  <div class="card note">データはこのブラウザの中だけに保存されます。別のパソコンで使うときは、右上の「バックアップ保存」→「読み込み」をしてください。</div>`}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // ---------- events ----------
@@ -239,7 +264,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.classList.contains('cell')){openPop(t);return}
  const gd=t.closest('[data-goday]');if(gd){setTimeout(()=>{const c=document.querySelector('td.cell[data-kind="s"][data-d="'+gd.dataset.goday+'"]');if(c){c.scrollIntoView({inline:'center',block:'center'});c.style.outline='3px solid #96505f'}},10);return}
  if(t.dataset.t){S.tab=t.dataset.t;ui();return}
- if(t.id==='prev'){S.mi=Math.max(0,S.mi-1);ui();return}if(t.id==='next'){S.mi=Math.min(S.months.length-1,S.mi+1);ui();return}
+ if(t.id==='prev'){S.mi=Math.max(0,S.mi-1);ui();return}if(t.id==='next'){if(S.mi>=S.months.length-1){const c=S.months[S.mi];const nm=c.m===12?1:c.m+1,ny=c.m===12?c.y+1:c.y;S.mi=ensureMonth(ny,nm)}else S.mi++;ui();return}
  if(t.dataset.rowfill){const[k,i]=t.dataset.rowfill.split(',');const days=dim(mo);
   if(k==='s'){const p=mo.staff[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!p.d[d])p.d[d]=(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';}
   else{const u=mo.users[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!u.u[d])u.u[d]='通所'}ui();return}
@@ -250,6 +275,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
   dl('﻿'+L.join('\n'),`LICO_請求_${mo.y}年${mo.m}月.csv`,'text/csv');return}
  if(t.id==='logout'){sessionStorage.removeItem('lico_in');location.reload();return}
+ if(t.dataset.adl){dl(JSON.stringify(S.archive[t.dataset.adl]),'LICO_保管_'+t.dataset.adl+'.json','application/json');return}
  if(t.id==='exp'){dl(JSON.stringify(S),'LICO_シフト管理_バックアップ.json','application/json');return}
  if(t.id==='imp'){$('#file').click();return}
  if(t.id==='reset'){if(confirm('入力したデータをすべて消して、最初の勤務表の状態に戻します。よいですか？')){localStorage.removeItem(KEY);location.reload()}}});
@@ -270,6 +296,10 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.ap!==undefined){S.settings.adds[+t.dataset.ap].per=t.value;ui();return}});
 function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()}
 if(!sessionStorage.getItem('lico_in')){loginView()}else{
+goToday(true);
 if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
-ui();}
+ui();
+setInterval(()=>{const n=new Date(),k=n.getFullYear()+'-'+(n.getMonth()+1);if(S.lastMonth!==k){goToday(true);ui()}},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){const n=new Date(),k=n.getFullYear()+'-'+(n.getMonth()+1);if(S.lastMonth!==k){goToday(true);ui()}}});
+}
 </script></body></html>
