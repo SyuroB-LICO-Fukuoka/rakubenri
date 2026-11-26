@@ -89,6 +89,8 @@ const CAT=[
  {id:'iryo',name:'医療連携体制加算',u:0,per:'count',n:'単位は区分で変わります。要確認'},
  {id:'shakai',name:'社会生活支援特別加算',u:480,per:'count',n:'対象の月は1を請求タブで入力'},
  {id:'peer',name:'ピアサポート実施加算',u:100,per:'once',n:'事業所として月1回'}];
+// 確認が取れた市区町村だけを足していく（名前,上乗せ割合%）
+const CITIES=[['福岡市',10]];
 const PERL={day:'利用日ごと',zai:'在宅の利用日ごと',count:'回数を入力',once:'事業所で月1回',month:'月1回（利用者ごと）',trip:'送迎1回ごと'};
 const SH=['出勤','出勤(9-16)','出勤(9-17)','出勤(9-18)','遅刻','早退','休み','欠勤','有給',''];
 const UO=['通所','在宅',''];const RO=['往復','迎えのみ','送りのみ','なし',''];
@@ -254,6 +256,7 @@ function vSet(mo){const s=S.settings;
  <label class="f">人員配置の区分（今の区分）<select data-set="ratio"><option value="10" ${s.ratio==10?'selected':''}>10:1（区分Ⅲ）</option><option value="7.5" ${s.ratio==7.5?'selected':''}>7.5:1（区分Ⅱ）</option></select></label>
  <label class="f">日ごとの必要時間に使う利用者数<select data-set="dayBasis"><option value="base" ${s.dayBasis==='base'?'selected':''}>基準の人数</option><option value="actual" ${s.dayBasis==='actual'?'selected':''}>その日の利用人数</option></select></label></div>
  <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)','number','0.1')}<div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
+ <label class="f">市区町村（確認済みのもの）<select data-city="1"><option value="">選ばない</option>${CITIES.map(c=>`<option value="${c[1]}">${c[0]}（${c[1]}%）</option>`).join('')}</select></label>
  <label class="f">地域区分（上乗せ割合）<select data-reg="1"><option value="">選ぶ</option>${[['1級地',20],['2級地',16],['3級地',15],['4級地',12],['5級地',10],['6級地',6],['7級地',3],['その他',0]].map(([n,r])=>`<option value="${r}" ${String(s.region)===String(r)&&s.region!==''?'selected':''}>${n}（${r}%）</option>`).join('')}</select></label>
  <label class="f">人件費割合（%）<input class="i" type="number" data-set="labor" value="${s.labor}"></label>
  <p class="note">単価＝10円×（1＋上乗せ割合×人件費割合）。初期値は福岡市（5級地＝10%）と、就労継続支援の人件費割合57%で、10.57円になります（複数の解説サイトで一致。最終確認は告示：平成18年厚生労働省告示第539号）。<b class="warn">福岡市以外の事業所は、ご自身の地域区分に直してください。</b>
@@ -331,6 +334,7 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.grp!==undefined){mo.users[+t.dataset.grp].group=t.value;ui();return}
  if(t.dataset.uname!==undefined){mo.users[+t.dataset.uname].name=t.value;ui();return}
  if(t.dataset.set){const k=t.dataset.set;S.settings[k]=(k==='dayBasis')?t.value:+t.value;ui();return}
+ if(t.dataset.city!==undefined){if(t.value!==''){S.settings.region=+t.value;S.settings.labor=57}ui();return}
  if(t.dataset.reg){S.settings.region=t.value===''?'':+t.value;ui();return}
  if(t.dataset.con){const c=S.settings.cat[t.dataset.con]=S.settings.cat[t.dataset.con]||{};c.on=t.checked;ui();return}
  if(t.dataset.cun){const c=S.settings.cat[t.dataset.cun]=S.settings.cat[t.dataset.cun]||{};c.units=+t.value||0;ui();return}
