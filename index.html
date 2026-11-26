@@ -213,7 +213,7 @@ function materializeAll(){if(!S.roster)return;
    for(let d=1;d<=days;d++){const v=(d in p.ex)?p.ex[d]:expU(r,mo,d);if(v)p.u[d]=v;else delete p.u[d];const rv=(d in p.exr)?p.exr[d]:expR(r,mo,d);if(rv)p.r[d]=rv;else delete p.r[d]}us.push(p)});mo.users=us})}
 function rosterChange(fn){capture();fn();materializeAll()}
 function renameAll(kind,oldn,newn){S.months.forEach(m=>(kind==='staff'?m.staff:m.users).forEach(p=>{if(p.name===oldn)p.name=newn}))}
-function initRoster(){if(S.roster){capture();materializeAll();return}
+function initRoster(){if(S.roster){if(!S.rosterFix){['staff','users'].forEach(k=>S.roster[k].forEach(r=>{if(r.from&&r.to)r.to=''}));S.rosterFix=1}capture();materializeAll();return}
  const R={staff:[],users:[]};const mi=S.months;const last=mi.length-1;
  const seen={staff:{},users:{}};
  mi.forEach((mo,i)=>{['staff','users'].forEach(k=>mo[k].forEach(p=>{const o=seen[k][p.name]||(seen[k][p.name]={first:i,last:i,p});o.last=i;o.p=p}))});
@@ -225,9 +225,9 @@ function initRoster(){if(S.roster){capture();materializeAll();return}
   return{pat,rpat}};
  for(const nm in seen.staff){const o=seen.staff[nm],p=o.p,inf=infer('staff',nm,o.first,o.last);let pat=inf.pat;
   if(!Object.keys(pat).length&&!mi.some(mo=>{const q=mo.staff.find(x=>x.name===nm);return q&&Object.keys(q.d).length})){const v=(p.role||'').includes('9-18')?'出勤(9-18)':(p.role||'').includes('9-17')?'出勤(9-17)':(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';[1,2,3,4,5].forEach(w=>pat[w]=v)}
-  R.staff.push({name:nm,role:p.role||'',h:p.h??null,from:o.first===0?'':monthFirst(mi[o.first]),to:o.last===last?'':iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()),pat})}
+  R.staff.push({name:nm,role:p.role||'',h:p.h??null,from:o.first===0?'':monthFirst(mi[o.first]),to:(o.first===0&&o.last<last)?iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()):'',pat})}
  for(const nm in seen.users){const o=seen.users[nm],p=o.p,inf=infer('users',nm,o.first,o.last);
-  R.users.push({name:nm,group:p.group||'',start:p.start||'',from:o.first===0?'':monthFirst(mi[o.first]),to:o.last===last?'':iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()),pat:inf.pat,rpat:inf.rpat})}
+  R.users.push({name:nm,group:p.group||'',start:p.start||'',from:o.first===0?'':monthFirst(mi[o.first]),to:(o.first===0&&o.last<last)?iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()):'',pat:inf.pat,rpat:inf.rpat})}
  S.roster=R;capture();materializeAll()}
 const dim=mo=>new Date(mo.y,mo.m,0).getDate();
 const wdOf=(mo,d)=>new Date(mo.y,mo.m-1,d).getDay();
