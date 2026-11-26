@@ -168,6 +168,7 @@ function ui(){
  $('#msel').innerHTML=S.months.map((m,i)=>`<option value="${i}" ${i===S.mi?'selected':''}>${m.y}年${m.m}月</option>`).join('');
  const tabs=[['shift','① 職員シフトと人員配置'],['use','② 利用日・送迎'],['bill','③ 請求金額'],['set','④ 設定']];
  $('#tabs').innerHTML=tabs.map(([k,v])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${v}</button>`).join('');
+ const ob=document.getElementById('limbar');if(ob)ob.remove();if(window.LIC&&window.LIC.pl.max&&mo.users.length>window.LIC.pl.max){const b=document.createElement('div');b.id='limbar';b.style.cssText='background:#fde2df;border-bottom:1px solid #e8a39a;padding:6px 14px;font-size:13px;text-align:center;color:#c0392b';b.textContent='利用者数（'+mo.users.length+'人）が、ご契約の上限（'+window.LIC.pl.max+'人）を超えています。上位のプランへの変更をお願いします。';document.body.prepend(b)}
  const m=$('#main');const sx=(document.querySelector('#shiftcard .scroll')||{}).scrollLeft||0,sy=scrollY;
  m.innerHTML=({shift:vShift,use:vUse,staffing:vStaffing,bill:vBill,set:vSet})[S.tab](mo);
  const sc=document.querySelector('#shiftcard .scroll');if(sc)sc.scrollLeft=sx;scrollTo(0,sy);
@@ -306,6 +307,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
   if(k==='s'){const p=mo.staff[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!p.d[d])p.d[d]=(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';}
   else{const u=mo.users[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!u.u[d])u.u[d]='通所'}ui();return}
  if(t.dataset.del){const[k,i]=t.dataset.del.split(',');if(confirm('この行を削除しますか？（この月だけ）')){(k==='s'?mo.staff:mo.users).splice(+i,1);ui()}return}
+ if(t.dataset.add==='u'&&window.LIC&&window.LIC.pl.max&&mo.users.length>=window.LIC.pl.max){alert('ご契約の利用者数の上限（'+window.LIC.pl.max+'人）です。上位のプランに変更すると、追加できます。');return}
  if(t.dataset.add){if(t.dataset.add==='s')mo.staff.push({role:'職業指導員（9-16）',name:'新しい職員',h:null,d:{}});else mo.users.push({group:'',name:'新しい利用者さん',u:{},r:{}});ui();return}
  if(t.id==='aadd'){S.settings.adds.push({name:'新しい加算',units:0,per:'day'});ui();return}
  if(t.dataset.adel){S.settings.adds.splice(+t.dataset.adel,1);ui();return}
@@ -341,7 +343,7 @@ function dl(txt,name,type){const a=document.createElement('a');a.href=URL.create
 const lk=localStorage.getItem('tp_license');let LIC=null;
 if(!sessionStorage.getItem('lico_in')&&lk){const r=await verifyLicense(lk);if(r.ok)sessionStorage.setItem('lico_in','1');else if(r.expired){expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
 if(lk){const r=await verifyLicense(lk);if(r.ok)LIC=r;else if(r.expired){sessionStorage.removeItem('lico_in');expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
-window.LIC=LIC;
+window.LIC=LIC;window.limitOver=()=>{const mo=S.months[S.mi];return LIC&&LIC.pl.max&&mo.users.length>LIC.pl.max};
 if(!sessionStorage.getItem('lico_in')){loginView()}else{
 goToday(true);try{if(localStorage.getItem('lico_mob'))document.body.classList.add('mob')}catch(e){}
 if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
