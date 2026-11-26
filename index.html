@@ -2,9 +2,9 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LICO シフト・利用日・請求管理</title>
 <style>
-:root{--ink:#2f2a28;--mute:#7a716c;--line:#ddd3ca;--bg:#faf6f1;--card:#fff;--wine:#96505f;--ok:#2f8f5b;--ng:#c0392b;--warn:#b7791f}
+:root{--ink:#2f2a28;--mute:#7a716c;--line:#d8e2dd;--bg:#f3f7f5;--card:#fff;--wine:#2e8b6a;--ok:#2f8f5b;--ng:#c0392b;--warn:#b7791f}
 *{box-sizing:border-box}body{margin:0;font-family:"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
-header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:3px solid var(--wine);padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 h1{font-size:16px;margin:0 8px 0 0;color:var(--wine)}
 select,input,button{font:inherit}button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer}button:hover{background:#f3ece5}
 .tabs button{border-radius:6px 6px 0 0;border-bottom:none}.tabs button.on{background:var(--wine);color:#fff;border-color:var(--wine)}
@@ -37,11 +37,16 @@ label.f{display:inline-flex;flex-direction:column;font-size:12px;color:var(--mut
 .dn{font-weight:700;font-size:15px}.dn.sun{color:var(--ng)}.dn.sat{color:#2a6fb0}.dn small{font-weight:400}.cl{text-align:center;margin-top:18px;color:#b0a8a0}
 .big{text-align:center;font-size:20px;font-weight:700;margin:4px 0}.okd .big{color:var(--ok);font-size:26px}.ngd .big{color:var(--ng);font-size:17px;line-height:1.25}
 .mini{font-size:11px;color:var(--mute);text-align:center}details summary{cursor:pointer}
-.cat td,.cat th{text-align:left!important}.cat td:first-child{text-align:center!important}</style></head><body>
+.cat td,.cat th{text-align:left!important}.cat td:first-child{text-align:center!important}.lg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(#e6f3ed,#f3f7f5)}
+.lgc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px 34px;width:min(92vw,380px);box-shadow:0 8px 30px #2e8b6a22}
+.lgc h2{margin:0 0 4px;color:var(--wine);font-size:22px}.lgc p{margin:0 0 18px;color:var(--mute);font-size:13px}
+.lgc label{display:block;font-size:12px;color:var(--mute);margin-top:12px}.lgc input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px;margin-top:4px}
+.lgc button{width:100%;margin-top:20px;background:var(--wine);color:#fff;border:none;padding:12px;font-size:15px;border-radius:8px}.lgc .er{color:var(--ng);font-size:12px;min-height:16px;margin-top:8px}
+</style></head><body>
 <header><h1>LICO シフト・利用日・請求</h1>
 <button id="prev">◀</button><select id="msel"></select><button id="next">▶</button>
 <span class="tabs" id="tabs"></span><span style="flex:1"></span>
-<button id="exp">バックアップ保存</button><button id="imp">読み込み</button><button id="reset">最初の状態に戻す</button><input type="file" id="file" accept=".json" hidden></header>
+<button id="exp">バックアップ保存</button><button id="imp">読み込み</button><button id="logout">ログアウト</button><button id="reset">最初の状態に戻す</button><input type="file" id="file" accept=".json" hidden></header>
 <main id="main"></main><div class="pop" id="pop"></div>
 <script>
 const SEED=[{"y": 2026, "m": 11, "holiday": [3, 23], "closed": [1, 7, 8, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2026, "m": 12, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27, 29, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 1, "holiday": [11], "closed": [1, 2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 2, "holiday": [11, 23], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 3, "holiday": [22], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 4, "holiday": [29], "closed": [3, 4, 10, 11, 17, 18, 24, 25], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 5, "holiday": [3, 4, 5], "closed": [1, 2, 8, 9, 15, 16, 22, 23, 29, 30], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 6, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 7, "holiday": [19], "closed": [3, 4, 10, 11, 17, 18, 24, 25, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 8, "holiday": [11], "closed": [1, 7, 8, 13, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 9, "holiday": [20, 23], "closed": [4, 5, 11, 12, 18, 19, 25, 26], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 10, "holiday": [11], "closed": [2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}];
@@ -213,6 +218,16 @@ function vSet(mo){const s=S.settings;
  <div class="card note">データはこのブラウザの中だけに保存されます。別のパソコンで使うときは、右上の「バックアップ保存」→「読み込み」をしてください。</div>`}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // ---------- events ----------
+
+function hsh(t){let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))>>>0;let g=7;for(const c of t+'lico')g=((g*31)+c.charCodeAt(0))>>>0;return h.toString(36)+g.toString(36)}
+function loginView(){const first=!localStorage.getItem('lico_auth');
+ document.body.innerHTML=`<div class="lg"><div class="lgc"><h2>LICO 管理システム</h2><p>${first?'はじめての設定：ログインIDとパスワードを決めてください（この端末に保存されます）':'就労継続支援B型 LICO　シフト・利用日・請求'}</p>
+ <label>ログインID</label><input id="lid" autocomplete="username"><label>パスワード</label><input id="lpw" type="password" autocomplete="${first?'new-password':'current-password'}">
+ <div class="er" id="ler"></div><button id="lbtn">${first?'設定して始める':'ログイン'}</button></div></div>`;
+ const go=()=>{const id=$('#lid').value.trim(),pw=$('#lpw').value;if(!id||pw.length<4){$('#ler').textContent='IDと、4文字以上のパスワードを入れてください';return}
+  const v=hsh(id+'|'+pw);if(first)localStorage.setItem('lico_auth',v);else if(localStorage.getItem('lico_auth')!==v){$('#ler').textContent='IDまたはパスワードが違います';return}
+  sessionStorage.setItem('lico_in','1');location.reload()};
+ $('#lbtn').onclick=go;$('#lpw').onkeydown=e=>{if(e.key==='Enter')go()}}
 let popFor=null;
 function openPop(td){const kind=td.dataset.kind,opts=kind==='s'?SH:kind==='u'?UO:RO;const r=td.getBoundingClientRect();const p=$('#pop');
  p.innerHTML=opts.map(o=>`<button data-v="${o}">${o||'（空にする）'}</button>`).join('');p.style.display='block';
@@ -234,6 +249,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.dataset.adel){S.settings.adds.splice(+t.dataset.adel,1);ui();return}
  if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
   dl('﻿'+L.join('\n'),`LICO_請求_${mo.y}年${mo.m}月.csv`,'text/csv');return}
+ if(t.id==='logout'){sessionStorage.removeItem('lico_in');location.reload();return}
  if(t.id==='exp'){dl(JSON.stringify(S),'LICO_シフト管理_バックアップ.json','application/json');return}
  if(t.id==='imp'){$('#file').click();return}
  if(t.id==='reset'){if(confirm('入力したデータをすべて消して、最初の勤務表の状態に戻します。よいですか？')){localStorage.removeItem(KEY);location.reload()}}});
@@ -253,6 +269,7 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.au!==undefined){S.settings.adds[+t.dataset.au].units=+t.value||0;ui();return}
  if(t.dataset.ap!==undefined){S.settings.adds[+t.dataset.ap].per=t.value;ui();return}});
 function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()}
+if(!sessionStorage.getItem('lico_in')){loginView()}else{
 if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
-ui();
+ui();}
 </script></body></html>
