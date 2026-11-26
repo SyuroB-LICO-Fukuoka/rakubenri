@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LICO シフト・利用日・請求管理</title>
+<style>
+:root{--ink:#2f2a28;--mute:#7a716c;--line:#ddd3ca;--bg:#faf6f1;--card:#fff;--wine:#96505f;--ok:#2f8f5b;--ng:#c0392b;--warn:#b7791f}
+*{box-sizing:border-box}body{margin:0;font-family:"Hiragino Sans","Yu Gothic",sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+h1{font-size:16px;margin:0 8px 0 0;color:var(--wine)}
+select,input,button{font:inherit}button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer}button:hover{background:#f3ece5}
+.tabs button{border-radius:6px 6px 0 0;border-bottom:none}.tabs button.on{background:var(--wine);color:#fff;border-color:var(--wine)}
+main{padding:12px 14px 60px}.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.grid{border-collapse:collapse;font-size:12px}.grid th,.grid td{border:1px solid var(--line);padding:0;text-align:center;min-width:34px;height:28px}
+.grid th{background:#f4ede6;font-weight:600}.grid td.nm,.grid th.nm{min-width:170px;text-align:left;padding:0 6px;position:sticky;left:0;background:#fff;z-index:2}
+.grid th.nm{background:#f4ede6}.grid td.role{min-width:210px;text-align:left;padding:0 4px;font-size:11px;color:var(--mute)}
+.closed{background:#efeae5!important}.sat{color:#2a6fb0}.sun,.hol{color:var(--ng)}
+.cell{cursor:pointer;user-select:none;font-size:11px;line-height:28px;height:28px}
+.s-出勤{background:#cdeedb}.s-9-16,.s-9-17,.s-9-18{background:#e4f6ec}.s-休み{background:#eee;color:#999}.s-欠勤{background:#f7c9c4}.s-有給{background:#cfe3f7}.s-遅刻,.s-早退{background:#fbe8b8}
+.u-通所{background:#fbd9b5}.u-在宅{background:#cfe3f7}
+.ng{background:#fde2df;color:var(--ng);font-weight:700}.okc{color:var(--ok)}
+.sum td,.sum th{background:#fbf8f4;font-size:11px}
+.pop{position:fixed;z-index:60;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px #0003;padding:4px;display:none}
+.pop button{display:block;width:120px;text-align:left;border:none;border-radius:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}.kpi b{font-size:22px;display:block}.kpi small{color:var(--mute)}
+.kpi.bad{border-color:var(--ng);background:#fff6f5}.kpi.good{border-color:var(--ok)}
+table.t{border-collapse:collapse;width:100%}table.t th,table.t td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:right}table.t th{background:#f4ede6}table.t td:first-child,table.t th:first-child{text-align:left}
+.warn{color:var(--warn)}.note{color:var(--mute);font-size:12px}
+input.i{width:110px;padding:3px 6px;border:1px solid var(--line);border-radius:5px}input.n{width:100%;border:none;padding:4px 6px;font-size:12px;background:transparent}
+.scroll{overflow-x:auto;max-width:100%}.right{text-align:right}
+label.f{display:inline-flex;flex-direction:column;font-size:12px;color:var(--mute);margin:0 14px 10px 0}label.f input,label.f select{margin-top:2px;color:var(--ink)}
+.banner{border-radius:12px;padding:14px 18px;margin-bottom:12px;border:2px solid}.banner.bad{background:#fff3f1;border-color:#e8a39a}.banner.good{background:#effaf3;border-color:#9fd5b5}
+.bn{font-size:22px;font-weight:700}.banner.bad .bn{color:var(--ng)}.banner.good .bn{color:var(--ok)}.bs{margin-top:4px;color:var(--ink)}
+.legend{margin-bottom:8px;font-size:12px}.dot{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle;margin-right:4px}.dot.g{background:#cdeedb}.dot.r{background:#f7c9c4}.dot.x{background:#e6e0da}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.ch{text-align:center;font-weight:700;padding:4px}.ch.sun{color:var(--ng)}.ch.sat{color:#2a6fb0}
+.cd{min-height:104px;border-radius:10px;padding:6px 8px;border:1px solid var(--line);background:#fff}.cd.empty{border:none;background:none}
+.cd.okd{background:#eefaf2;border-color:#b7e2c8;cursor:pointer}.cd.ngd{background:#fdeceb;border-color:#eaa9a0;cursor:pointer}.cd.closedc{background:#efeae5;color:#aaa}
+.dn{font-weight:700;font-size:15px}.dn.sun{color:var(--ng)}.dn.sat{color:#2a6fb0}.dn small{font-weight:400}.cl{text-align:center;margin-top:18px;color:#b0a8a0}
+.big{text-align:center;font-size:20px;font-weight:700;margin:4px 0}.okd .big{color:var(--ok);font-size:26px}.ngd .big{color:var(--ng);font-size:17px;line-height:1.25}
+.mini{font-size:11px;color:var(--mute);text-align:center}details summary{cursor:pointer}
+.cat td,.cat th{text-align:left!important}.cat td:first-child{text-align:center!important}</style></head><body>
+<header><h1>LICO シフト・利用日・請求</h1>
+<button id="prev">◀</button><select id="msel"></select><button id="next">▶</button>
+<span class="tabs" id="tabs"></span><span style="flex:1"></span>
+<button id="exp">バックアップ保存</button><button id="imp">読み込み</button><button id="reset">最初の状態に戻す</button><input type="file" id="file" accept=".json" hidden></header>
+<main id="main"></main><div class="pop" id="pop"></div>
+<script>
+const SEED=[{"y": 2026, "m": 11, "holiday": [3, 23], "closed": [1, 7, 8, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2026, "m": 12, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27, 29, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 1, "holiday": [11], "closed": [1, 2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 2, "holiday": [11, 23], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 3, "holiday": [22], "closed": [6, 7, 13, 14, 20, 21, 27, 28], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 4, "holiday": [29], "closed": [3, 4, 10, 11, 17, 18, 24, 25], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 5, "holiday": [3, 4, 5], "closed": [1, 2, 8, 9, 15, 16, 22, 23, 29, 30], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 6, "holiday": [], "closed": [5, 6, 12, 13, 19, 20, 26, 27], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 7, "holiday": [19], "closed": [3, 4, 10, 11, 17, 18, 24, 25, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 8, "holiday": [11], "closed": [1, 7, 8, 13, 14, 15, 21, 22, 28, 29], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 9, "holiday": [20, 23], "closed": [4, 5, 11, 12, 18, 19, 25, 26], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}, {"y": 2027, "m": 10, "holiday": [11], "closed": [2, 3, 9, 10, 16, 17, 23, 24, 30, 31], "staff": [{"role": "職業指導員（9-16）", "name": "職員1", "h": null, "d": {}}, {"role": "生活支援員（9-18）", "name": "職員2", "h": 8, "d": {}}], "users": [{"group": "", "name": "利用者1", "u": {}, "r": {}}]}];
+const KEY='lico_kanri_v1';
+const DEF={ftWeekH:40,ftDays:5,baseUsers:18,ratio:10,dayBasis:'base',minStaff:2,h916:6,days916:5,
+ baseUnits:580,unitPrice:10.57,kaizen:8,rideUnits:21,
+ adds:[],caps:{}};
+const CAT=[
+ {id:'sen3',name:'福祉専門職員配置等加算（Ⅰ）',u:15,per:'day',n:'常勤の福祉専門職員が35%以上'},
+ {id:'sen2',name:'福祉専門職員配置等加算（Ⅱ）',u:10,per:'day',n:'常勤が75%以上など'},
+ {id:'sen1',name:'福祉専門職員配置等加算（Ⅲ）',u:6,per:'day',n:'常勤職員が75%以上など'},
+ {id:'ido',name:'就労移行支援体制加算',u:65,per:'day',n:'前年度の一般就労実績が条件（工賃額で65/72単位）'},
+ {id:'chin',name:'賃金向上達成指導員配置加算',u:0,per:'day',n:'単位は定員などで決まります。要確認'},
+ {id:'meal',name:'食事提供体制加算',u:30,per:'day',n:'食事を出した利用日'},
+ {id:'zai',name:'在宅時生活支援サービス加算',u:0,per:'zai',n:'在宅の利用日ごと。単位は要確認'},
+ {id:'juu',name:'重度者支援体制加算',u:0,per:'day',n:'単位は区分で変わります。要確認'},
+ {id:'kesseki',name:'欠席時対応加算',u:94,per:'count',n:'回数を請求タブで入力（月4回まで）'},
+ {id:'shoki',name:'初期加算',u:30,per:'count',n:'利用開始から30日以内の利用日数を請求タブで入力'},
+ {id:'houmon',name:'訪問支援特別加算（Ⅰ）',u:187,per:'count',n:'回数を請求タブで入力'},
+ {id:'taiken',name:'障害福祉サービスの体験利用支援加算（Ⅰ）',u:500,per:'count',n:'回数を請求タブで入力'},
+ {id:'kinkyu',name:'緊急時受入加算',u:100,per:'count',n:'回数を請求タブで入力'},
+ {id:'jougen',name:'利用者負担上限額管理加算',u:150,per:'count',n:'対象の月は1を請求タブで入力'},
+ {id:'iryo',name:'医療連携体制加算',u:0,per:'count',n:'単位は区分で変わります。要確認'},
+ {id:'shakai',name:'社会生活支援特別加算',u:480,per:'count',n:'対象の月は1を請求タブで入力'},
+ {id:'peer',name:'ピアサポート実施加算',u:100,per:'once',n:'事業所として月1回'}];
+const PERL={day:'利用日ごと',zai:'在宅の利用日ごと',count:'回数を入力',once:'事業所で月1回',month:'月1回（利用者ごと）',trip:'送迎1回ごと'};
+const SH=['出勤','出勤(9-16)','出勤(9-17)','出勤(9-18)','遅刻','早退','休み','欠勤','有給',''];
+const UO=['通所','在宅',''];const RO=['往復','迎えのみ','送りのみ','なし',''];
+const WD=['日','月','火','水','木','金','土'];
+let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(S&&S.tab==='staffing')S.tab='shift';
+if(!S||!S.months){S={settings:JSON.parse(JSON.stringify(DEF)),months:JSON.parse(JSON.stringify(SEED)),mi:0,tab:'shift'}}
+S.settings=Object.assign({},DEF,S.settings);S.settings.cat=S.settings.cat||{};S.counts=S.counts||{};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+const dim=mo=>new Date(mo.y,mo.m,0).getDate();
+const wdOf=(mo,d)=>new Date(mo.y,mo.m-1,d).getDay();
+const isClosed=(mo,d)=>mo.closed.includes(d);
+const isSabi=p=>(p.role||'').startsWith('サービス管理責任者');
+function defH(p){const r=p.role||'';if(p.h)return p.h;if(r.includes('9-18'))return 8;return S.settings.h916}
+function hrs(st,p){if(!st)return 0;if(st==='出勤'||st==='遅刻'||st==='早退')return defH(p);
+ if(st==='出勤(9-16)')return 6;if(st==='出勤(9-17)')return 7;if(st==='出勤(9-18)')return 8;return 0}
+const present=st=>st==='出勤'||st==='遅刻'||st==='早退'||(st||'').startsWith('出勤(');
+const f1=x=>Math.round(x*10)/10, f2=x=>Math.round(x*100)/100, yen=x=>'¥'+Math.round(x).toLocaleString();
+function dayStats(mo,d){
+ const s=S.settings;let cnt=0,h=0;
+ mo.staff.forEach(p=>{if(isSabi(p))return;const st=p.d[d];if(present(st)){cnt++;h+=hrs(st,p)}});
+ let users=0;mo.users.forEach(u=>{if(u.u[d]==='通所'||u.u[d]==='在宅')users++});
+ const dayH=s.ftWeekH/s.ftDays;const basis=s.dayBasis==='actual'?users:s.baseUsers;
+ const reqH=basis/s.ratio*dayH;const lackH=Math.max(0,f1(reqH-h)),lackP=Math.max(0,s.minStaff-cnt);
+ return{cnt,h,fte:h/dayH,users,reqH,lackH,lackP,ok:lackH<=0&&lackP<=0}}
+function monthStats(mo){
+ const s=S.settings;let tot=0;const days=dim(mo);
+ mo.staff.forEach(p=>{if(isSabi(p))return;for(let d=1;d<=days;d++)tot+=hrs(p.d[d],p)});
+ const ft=s.ftWeekH*days/7,fte=tot/ft;const mk=r=>{const req=s.baseUsers/r;const lack=Math.max(0,f1(req*ft-tot));const wk=f1(lack*7/days);
+  return{req,ok:fte>=req,lack,wk,ppl:Math.ceil(wk/(s.h916*s.days916)-1e-9)}};
+ let lackDays=0,lackSum=0,open=0;
+ for(let d=1;d<=days;d++){if(isClosed(mo,d))continue;open++;const x=dayStats(mo,d);if(!x.ok){lackDays++;lackSum+=x.lackH}}
+ const hasFT=mo.staff.some(p=>!isSabi(p)&&defH(p)>=8&&Object.values(p.d).some(present));
+ return{tot,ft,fte,a:mk(10),b:mk(7.5),lackDays,lackSum:f1(lackSum),open,hasFT}}
+function billing(mo){
+ const s=S.settings,days=dim(mo);let rows=[],T={days:0,trips:0,units:0};
+ mo.users.forEach(u=>{let tsu=0,zai=0,trips=0;
+  for(let d=1;d<=days;d++){if(isClosed(mo,d))continue;const a=u.u[d];if(a==='通所')tsu++;else if(a==='在宅')zai++;else continue;
+   if(a==='通所'){const r=u.r[d];if(r==='往復')trips+=2;else if(r==='迎えのみ'||r==='送りのみ')trips+=1}}
+  const use=tsu+zai;let units=use*s.baseUnits+trips*s.rideUnits;
+  s.adds.forEach(a=>{const q=a.per==='day'?use:a.per==='trip'?trips:1;if(use>0)units+=a.units*q});
+  CAT.forEach(c=>{const o=s.cat[c.id];if(!o||!o.on||use===0)return;const un=o.units??c.u;
+   if(c.per==='day')units+=un*use;else if(c.per==='zai')units+=un*zai;else if(c.per==='count')units+=un*(+(S.counts[mo.y+'-'+mo.m+'|'+u.name+'|'+c.id])||0)});
+  rows.push({name:u.name,tsu,zai,use,trips,units});T.days+=use;T.trips+=trips;T.units+=units});
+ let once=0;CAT.forEach(c=>{const o=s.cat[c.id];if(o&&o.on&&c.per==='once'&&T.days>0)once+=(o.units??c.u)});T.units+=once;
+ const kz=T.units*s.kaizen/100;const totalUnits=T.units+kz;
+ const total=Math.floor(totalUnits*s.unitPrice);
+ // 利用者負担（上限額：設定。0＝負担なし）：10%と上限の小さいほう
+ let burden=0;rows.forEach(r=>{const share=Math.floor(r.units*(1+s.kaizen/100)*s.unitPrice);const tenth=Math.floor(share/10);
+  const cap=(s.caps[mo.y+'-'+mo.m+'|'+r.name]??s.caps[r.name]??0);r.share=share;r.cap=cap;r.burden=cap===0?0:Math.min(tenth,cap);burden+=r.burden});
+ return{rows,T,kz,totalUnits,total,burden,claim:total-burden}}
+// ---------- UI ----------
+function ui(){
+ const mo=S.months[S.mi];
+ $('#msel').innerHTML=S.months.map((m,i)=>`<option value="${i}" ${i===S.mi?'selected':''}>${m.y}年${m.m}月</option>`).join('');
+ const tabs=[['shift','① 職員シフトと人員配置'],['use','② 利用日・送迎'],['bill','③ 請求金額'],['set','④ 設定']];
+ $('#tabs').innerHTML=tabs.map(([k,v])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${v}</button>`).join('');
+ const m=$('#main');const sx=(document.querySelector('#shiftcard .scroll')||{}).scrollLeft||0,sy=scrollY;
+ m.innerHTML=({shift:vShift,use:vUse,staffing:vStaffing,bill:vBill,set:vSet})[S.tab](mo);
+ const sc=document.querySelector('#shiftcard .scroll');if(sc)sc.scrollLeft=sx;scrollTo(0,sy);
+ save()}
+function head(mo,withTot){const days=dim(mo);let a='<tr><th class="nm">職種／区分</th><th class="nm" style="left:0">氏名</th>',b='<tr><th></th><th></th>';
+ for(let d=1;d<=days;d++){const w=wdOf(mo,d);const hol=mo.holiday.includes(d);const c=isClosed(mo,d)?'closed ':'';const col=(hol||w===0)?'sun':w===6?'sat':'';
+  a+=`<th class="${c}${col}">${d}</th>`;b+=`<th class="${c}${col}">${hol?'祝':WD[w]}</th>`}
+ return a+'</tr>'+b+'</tr>'}
+function vShift(mo){return vStaffing(mo)+vShiftGrid(mo)}
+function vShiftGrid(mo){const days=dim(mo);
+ let h=`<div class="card" id="shiftcard"><b>職員シフト</b>　<span class="note">セルをクリックして選ぶと、上のカレンダーがすぐ変わります。緑＝出勤、灰＝休み。サービス管理責任者は人員配置に入りません。</span><div class="scroll" style="margin-top:8px"><table class="grid">${head(mo)}`;
+ mo.staff.forEach((p,i)=>{h+=`<tr><td class="role nm"><input class="n" data-role="${i}" value="${esc(p.role||'')}" placeholder="職種"></td><td class="nm"><input class="n" data-name="${i}" value="${esc(p.name)}"></td>`;
+  for(let d=1;d<=days;d++){const st=p.d[d]||'';const cl=isClosed(mo,d)?' closed':'';const k='s-'+(st.startsWith('出勤(')?st.slice(3,-1):st);
+   h+=`<td class="cell ${st?k:''}${cl}" data-kind="s" data-i="${i}" data-d="${d}">${st?st.replace('出勤(','').replace(')','').replace('出勤','出'):''}</td>`}
+  h+=`<td><button data-rowfill="s,${i}">全日出勤</button></td><td><button data-del="s,${i}">削除</button></td></tr>`});
+ h+=`<tr class="sum"><th class="nm" colspan="2">出勤人数（サビ管除く）</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':!x.ok?'ng':''}">${isClosed(mo,d)?'':x.cnt}</td>`}
+ h+=`</tr><tr class="sum"><th class="nm" colspan="2">勤務時間 合計(h)</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':f1(x.h)}</td>`}
+ h+=`</tr><tr class="sum"><th class="nm" colspan="2">あと何時間足りない</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':!x.ok?'ng':'okc'}">${isClosed(mo,d)?'':x.ok?'○':(x.lackH>0?x.lackH:'人')}</td>`}
+ h+=`</tr></table><p><button data-add="s">＋職員を追加</button></p></div>`;
+ return h}
+function vUse(mo){const days=dim(mo);
+ let h=`<div class="card"><div class="note">通所／在宅を選びます（橙＝通所、青＝在宅）。灰色の列は休所。送迎は下の表で選びます。</div></div><div class="scroll card"><table class="grid">${head(mo)}`;
+ mo.users.forEach((u,i)=>{h+=`<tr><td class="role nm"><input class="n" data-grp="${i}" value="${esc(u.group||'')}" placeholder="利用パターン"></td><td class="nm"><input class="n" data-uname="${i}" value="${esc(u.name)}"></td>`;
+  for(let d=1;d<=days;d++){const v=u.u[d]||'';const cl=isClosed(mo,d)?' closed':'';h+=`<td class="cell ${v?'u-'+v:''}${cl}" data-kind="u" data-i="${i}" data-d="${d}">${v?v[0]:''}</td>`}
+  h+=`<td><button data-rowfill="u,${i}">全日通所</button></td><td><button data-del="u,${i}">削除</button></td></tr>`});
+ h+=`<tr class="sum"><th class="nm" colspan="2">通所</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':mo.users.filter(u=>u.u[d]==='通所').length}</td>`;
+ h+=`</tr><tr class="sum"><th class="nm" colspan="2">在宅</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':mo.users.filter(u=>u.u[d]==='在宅').length}</td>`;
+ h+=`</tr><tr class="sum"><th class="nm" colspan="2">利用人数</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':dayStats(mo,d).users}</td>`;
+ h+=`</tr></table><p><button data-add="u">＋利用者さんを追加</button></p></div>`;
+ h+=`<div class="scroll card"><b>送迎</b>（往復＝迎え＋送り／迎えのみ／送りのみ）<table class="grid" style="margin-top:6px">${head(mo)}`;
+ mo.users.forEach((u,i)=>{h+=`<tr><td class="role nm">送迎</td><td class="nm">${esc(u.name)}</td>`;
+  for(let d=1;d<=days;d++){const v=u.r[d]||'';const cl=isClosed(mo,d)?' closed':'';h+=`<td class="cell ${v&&v!=='なし'?'s-出勤':''}${cl}" data-kind="r" data-i="${i}" data-d="${d}">${v==='往復'?'往':v==='迎えのみ'?'迎':v==='送りのみ'?'送':''}</td>`}h+='</tr>'});
+ h+=`<tr class="sum"><th class="nm" colspan="2">迎え／送り（人）</th>`;for(let d=1;d<=days;d++){const a=mo.users.filter(u=>['往復','迎えのみ'].includes(u.r[d])).length,b=mo.users.filter(u=>['往復','送りのみ'].includes(u.r[d])).length;h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':a+'/'+b}</td>`}
+ return h+'</tr></table></div>'}
+function kpis(mo,ms){const s=S.settings;const A=s.ratio===7.5?ms.b:ms.a,lbl=s.ratio===7.5?'7.5:1':'10:1';
+ return `<div class="cards"><div class="kpi ${A.ok?'good':'bad'}"><small>常勤換算（${lbl}・今の区分）</small><b>${f2(ms.fte)}人 / 必要 ${f2(A.req)}人</b><small>${A.ok?'基準を満たしています':'足りません'}</small></div>
+ <div class="kpi ${A.lack>0?'bad':'good'}"><small>月の不足時間</small><b>${A.lack>0?'あと '+A.lack+' 時間':'不足なし'}</b><small>週あたり ${A.wk}h／「9〜16」の人あと ${A.ppl}人</small></div>
+ <div class="kpi ${ms.lackDays?'bad':'good'}"><small>人員が足りない営業日</small><b>${ms.lackDays} 日 / ${ms.open}日</b><small>日ごとの不足時間の合計 ${ms.lackSum}h</small></div>
+ <div class="kpi ${ms.hasFT?'good':'bad'}"><small>常勤（1日8h）の職員</small><b>${ms.hasFT?'いる':'いない'}</b><small>基準では1人以上が常勤</small></div></div>`}
+function vStaffing(mo){const days=dim(mo),ms=monthStats(mo),s=S.settings;
+ const A=s.ratio===7.5?ms.b:ms.a,lbl=s.ratio===7.5?'7.5:1':'10:1';
+ const bad=ms.lackDays>0||!A.ok;
+ let h=`<div class="banner ${bad?'bad':'good'}"><div class="bn">${bad?'人員が足りない日があります':'この月は、人員が足りています'}</div>
+ <div class="bs">${ms.lackDays>0?`足りない日：<b>${ms.lackDays}日</b>（合わせて あと${ms.lackSum}時間）　`:''}${!A.ok?`月全体でも、あと<b>${A.lack}時間</b>足りません（「9〜16」の人あと${A.ppl}人ぶん）`:'月全体の基準（'+lbl+'）も満たしています'}</div></div>`;
+ h+=`<div class="card"><div class="legend"><span class="dot g"></span>足りている　<span class="dot r"></span>足りない（あと何時間）　<span class="dot x"></span>休所　<span class="note">　日をクリックすると、下のシフト表のその日に移ります</span></div><div class="cal">`;
+ ['日','月','火','水','木','金','土'].forEach((w,i)=>h+=`<div class="ch ${i===0?'sun':i===6?'sat':''}">${w}</div>`);
+ const first=wdOf(mo,1);for(let i=0;i<first;i++)h+='<div class="cd empty"></div>';
+ for(let d=1;d<=days;d++){const w=wdOf(mo,d),hol=mo.holiday.includes(d),col=(hol||w===0)?'sun':w===6?'sat':'';
+  if(isClosed(mo,d)){h+=`<div class="cd closedc"><div class="dn ${col}">${d}</div><div class="cl">休所</div></div>`;continue}
+  const x=dayStats(mo,d);
+  h+=`<div class="cd ${x.ok?'okd':'ngd'}" data-goday="${d}"><div class="dn ${col}">${d}${hol?'<small> 祝</small>':''}</div>
+  <div class="big">${x.ok?'○':'あと'+(x.lackH>0?x.lackH+'時間':'')+(x.lackH>0&&x.lackP>0?'<br>':'')+(x.lackP>0?'<span style="font-size:13px">人数あと'+x.lackP+'人</span>':'')}</div>
+  <div class="mini">職員 ${x.cnt}人（${f1(x.h)}h）<br>利用 ${x.users}人</div></div>`}
+ h+=`</div></div><details class="card"><summary><b>くわしい計算を見る</b></summary><table class="t" style="margin-top:8px"><tr><th></th><th>10:1（区分Ⅲ）</th><th>7.5:1（区分Ⅱ）</th></tr>
+ <tr><td>必要な常勤換算（${s.baseUsers}人÷）</td><td>${f2(ms.a.req)}</td><td>${f2(ms.b.req)}</td></tr><tr><td>いまの常勤換算</td><td>${f2(ms.fte)}</td><td>${f2(ms.fte)}</td></tr>
+ <tr><td>判定</td><td class="${ms.a.ok?'okc':'ng'}">${ms.a.ok?'満たしている':'足りない'}</td><td class="${ms.b.ok?'okc':'ng'}">${ms.b.ok?'満たしている':'足りない'}</td></tr>
+ <tr><td>足りない時間（月・h）</td><td>${ms.a.lack}</td><td>${ms.b.lack}</td></tr><tr><td>足りない時間（週・h）</td><td>${ms.a.wk}</td><td>${ms.b.wk}</td></tr>
+ <tr><td>「9〜16」の人（週${s.days916}日）あと何人</td><td>${ms.a.ppl}</td><td>${ms.b.ppl}</td></tr></table>
+ <p class="note">月の勤務時間合計 ${f1(ms.tot)}h ÷ 常勤の月間時間 ${f1(ms.ft)}h。日の必要時間＝${s.dayBasis==='actual'?'その日の利用人数':'基準'+s.baseUsers+'人'}÷${s.ratio}×${s.ftWeekH/s.ftDays}h、出勤人数は最低${s.minStaff}人。サービス管理責任者は数えません。</p></details>`;
+ return h}
+function countUI(mo){const on=CAT.filter(c=>{const o=S.settings.cat[c.id];return o&&o.on&&c.per==='count'});if(!on.length)return '';
+ let h='<p><b>回数で数える加算</b>（この月の回数を入れます）</p><table class="t"><tr><th>利用者さん</th>'+on.map(c=>'<th>'+esc(c.name)+'</th>').join('')+'</tr>';
+ mo.users.forEach(u=>{h+='<tr><td>'+esc(u.name)+'</td>'+on.map(c=>{const k=mo.y+'-'+mo.m+'|'+u.name+'|'+c.id;return '<td><input class="i" style="width:60px" type="number" min="0" data-cnt="'+esc(k)+'" value="'+(S.counts[k]||0)+'"></td>'}).join('')+'</tr>'});
+ return h+'</table>'}
+function catUI(){return '<table class="t cat"><tr><th>使う</th><th>加算の名前</th><th>単位</th><th>数え方</th><th>メモ（仮の値・要確認）</th></tr>'+CAT.map(c=>{const o=S.settings.cat[c.id]||{};
+ return `<tr><td style="text-align:center"><input type="checkbox" data-con="${c.id}" ${o.on?'checked':''}></td><td>${esc(c.name)}</td><td><input class="i" style="width:70px" type="number" data-cun="${c.id}" value="${o.units??c.u}"></td><td>${PERL[c.per]}</td><td class="note" style="text-align:left">${esc(c.n)}</td></tr>`}).join('')+'</table>'}
+function vBill(mo){const b=billing(mo),s=S.settings;
+ let h=`<div class="cards"><div class="kpi"><small>今月の請求額（10割）</small><b>${yen(b.total)}</b><small>${b.T.days}利用日／${Math.round(b.totalUnits).toLocaleString()}単位</small></div>
+ <div class="kpi"><small>利用者負担（合計）</small><b>${yen(b.burden)}</b><small>上限額は下の表で設定</small></div>
+ <div class="kpi good"><small>国保連への請求（9割ぶん）</small><b>${yen(b.claim)}</b><small>＝請求額−利用者負担</small></div></div>
+ <div class="card"><table class="t"><tr><th>利用者さん</th><th>通所</th><th>在宅</th><th>利用日数</th><th>送迎(片道)</th><th>単位数</th><th>金額(10割)</th><th>負担上限(円)</th><th>利用者負担</th></tr>`;
+ b.rows.forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${r.tsu}</td><td>${r.zai}</td><td>${r.use}</td><td>${r.trips}</td><td>${Math.round(r.units).toLocaleString()}</td><td>${yen(r.share)}</td><td><input class="i" style="width:80px" type="number" data-cap="${esc(r.name)}" value="${r.cap}"></td><td>${yen(r.burden)}</td></tr>`});
+ h+=`<tr><th>合計</th><th></th><th></th><th>${b.T.days}</th><th>${b.T.trips}</th><th>${Math.round(b.T.units).toLocaleString()}</th><th>${yen(b.total)}</th><th></th><th>${yen(b.burden)}</th></tr></table>
+<div class="scroll">${countUI(mo)}</div>
+ <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）×（1＋処遇改善${s.kaizen}%）×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・処遇改善率・単価は仮の値です。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
+ <p><button id="csv">この月の請求をCSVで保存</button></p></div>`;return h}
+function vSet(mo){const s=S.settings;
+ const F=(k,l,t='number',st='')=>`<label class="f">${l}<input class="i" type="${t}" step="${st}" data-set="${k}" value="${s[k]}"></label>`;
+ return `<div class="card"><b>人員配置</b><br><br>${F('ftWeekH','常勤の週の勤務時間(h)')}${F('ftDays','常勤の週の勤務日数')}${F('baseUsers','利用者数（基準）')}${F('minStaff','1日の最低出勤人数')}${F('h916','「9〜16」の人の1日(h)')}${F('days916','その人の週の出勤日数')}
+ <label class="f">人員配置の区分（今の区分）<select data-set="ratio"><option value="10" ${s.ratio==10?'selected':''}>10:1（区分Ⅲ）</option><option value="7.5" ${s.ratio==7.5?'selected':''}>7.5:1（区分Ⅱ）</option></select></label>
+ <label class="f">日ごとの必要時間に使う利用者数<select data-set="dayBasis"><option value="base" ${s.dayBasis==='base'?'selected':''}>基準の人数</option><option value="actual" ${s.dayBasis==='actual'?'selected':''}>その日の利用人数</option></select></label></div>
+ <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)','number','0.1')}${F('rideUnits','送迎加算（片道・単位）','number')}
+ <p class="note">最初の半年は580単位（所定990×984/1000を想定）、福岡市の単価10.57円は収支計画v14と同じ。送迎加算・処遇改善率は仮。</p>
+ <b>加算を選ぶ</b>（チェックを入れた加算が請求に入ります）<div class="scroll">${catUI()}</div><br><b>その他の加算（自分で追加）</b><table class="t"><tr><th>名前</th><th>単位</th><th>数え方</th><th></th></tr>${s.adds.map((a,i)=>`<tr><td><input class="i" data-an="${i}" value="${esc(a.name)}"></td><td><input class="i" style="width:70px" type="number" data-au="${i}" value="${a.units}"></td><td><select data-ap="${i}"><option value="day" ${a.per==='day'?'selected':''}>利用日ごと</option><option value="trip" ${a.per==='trip'?'selected':''}>送迎1回ごと</option><option value="month" ${a.per==='month'?'selected':''}>利用者ごとに月1回</option></select></td><td><button data-adel="${i}">削除</button></td></tr>`).join('')}</table>
+ <p><button id="aadd">＋加算を追加</button></p></div>
+ <div class="card note">データはこのブラウザの中だけに保存されます。別のパソコンで使うときは、右上の「バックアップ保存」→「読み込み」をしてください。</div>`}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// ---------- events ----------
+let popFor=null;
+function openPop(td){const kind=td.dataset.kind,opts=kind==='s'?SH:kind==='u'?UO:RO;const r=td.getBoundingClientRect();const p=$('#pop');
+ p.innerHTML=opts.map(o=>`<button data-v="${o}">${o||'（空にする）'}</button>`).join('');p.style.display='block';
+ p.style.left=Math.min(r.left,innerWidth-140)+'px';p.style.top=Math.min(r.bottom,innerHeight-p.offsetHeight-8)+'px';popFor=td}
+document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
+ if(t.closest('#pop')&&t.dataset.v!==undefined){const td=popFor,i=+td.dataset.i,d=+td.dataset.d,k=td.dataset.kind;
+  const tgt=k==='s'?mo.staff[i].d:k==='u'?mo.users[i].u:mo.users[i].r;if(t.dataset.v)tgt[d]=t.dataset.v;else delete tgt[d];$('#pop').style.display='none';ui();return}
+ $('#pop').style.display='none';
+ if(t.classList.contains('cell')){openPop(t);return}
+ const gd=t.closest('[data-goday]');if(gd){setTimeout(()=>{const c=document.querySelector('td.cell[data-kind="s"][data-d="'+gd.dataset.goday+'"]');if(c){c.scrollIntoView({inline:'center',block:'center'});c.style.outline='3px solid #96505f'}},10);return}
+ if(t.dataset.t){S.tab=t.dataset.t;ui();return}
+ if(t.id==='prev'){S.mi=Math.max(0,S.mi-1);ui();return}if(t.id==='next'){S.mi=Math.min(S.months.length-1,S.mi+1);ui();return}
+ if(t.dataset.rowfill){const[k,i]=t.dataset.rowfill.split(',');const days=dim(mo);
+  if(k==='s'){const p=mo.staff[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!p.d[d])p.d[d]=(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';}
+  else{const u=mo.users[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!u.u[d])u.u[d]='通所'}ui();return}
+ if(t.dataset.del){const[k,i]=t.dataset.del.split(',');if(confirm('この行を削除しますか？（この月だけ）')){(k==='s'?mo.staff:mo.users).splice(+i,1);ui()}return}
+ if(t.dataset.add){if(t.dataset.add==='s')mo.staff.push({role:'職業指導員（9-16）',name:'新しい職員',h:null,d:{}});else mo.users.push({group:'',name:'新しい利用者さん',u:{},r:{}});ui();return}
+ if(t.id==='aadd'){S.settings.adds.push({name:'新しい加算',units:0,per:'day'});ui();return}
+ if(t.dataset.adel){S.settings.adds.splice(+t.dataset.adel,1);ui();return}
+ if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
+  dl('﻿'+L.join('\n'),`LICO_請求_${mo.y}年${mo.m}月.csv`,'text/csv');return}
+ if(t.id==='exp'){dl(JSON.stringify(S),'LICO_シフト管理_バックアップ.json','application/json');return}
+ if(t.id==='imp'){$('#file').click();return}
+ if(t.id==='reset'){if(confirm('入力したデータをすべて消して、最初の勤務表の状態に戻します。よいですか？')){localStorage.removeItem(KEY);location.reload()}}});
+document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
+ if(t.id==='msel'){S.mi=+t.value;ui();return}
+ if(t.id==='file'){const r=new FileReader();r.onload=()=>{try{S=JSON.parse(r.result);S.settings=Object.assign({},DEF,S.settings);ui()}catch(x){alert('読み込めませんでした')}};r.readAsText(t.files[0]);return}
+ if(t.dataset.role!==undefined){mo.staff[+t.dataset.role].role=t.value;ui();return}
+ if(t.dataset.name!==undefined){mo.staff[+t.dataset.name].name=t.value;ui();return}
+ if(t.dataset.grp!==undefined){mo.users[+t.dataset.grp].group=t.value;ui();return}
+ if(t.dataset.uname!==undefined){mo.users[+t.dataset.uname].name=t.value;ui();return}
+ if(t.dataset.set){const k=t.dataset.set;S.settings[k]=(k==='dayBasis')?t.value:+t.value;ui();return}
+ if(t.dataset.con){const c=S.settings.cat[t.dataset.con]=S.settings.cat[t.dataset.con]||{};c.on=t.checked;ui();return}
+ if(t.dataset.cun){const c=S.settings.cat[t.dataset.cun]=S.settings.cat[t.dataset.cun]||{};c.units=+t.value||0;ui();return}
+ if(t.dataset.cnt){S.counts[t.dataset.cnt]=+t.value||0;ui();return}
+ if(t.dataset.cap!==undefined){S.settings.caps[t.dataset.cap]=+t.value||0;ui();return}
+ if(t.dataset.an!==undefined){S.settings.adds[+t.dataset.an].name=t.value;ui();return}
+ if(t.dataset.au!==undefined){S.settings.adds[+t.dataset.au].units=+t.value||0;ui();return}
+ if(t.dataset.ap!==undefined){S.settings.adds[+t.dataset.ap].per=t.value;ui();return}});
+function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()}
+if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
+ui();
+</script></body></html>
