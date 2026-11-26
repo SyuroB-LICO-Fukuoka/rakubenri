@@ -114,12 +114,10 @@ function jpHolidays(y,m){const H=new Set();const add=(mm,dd)=>{if(mm===m)H.add(d
  return [...H].filter(x=>x&&new Date(y,m-1,x).getMonth()===m-1).sort((a,b)=>a-b)}
 function newMonth(y,m,prev){const days=new Date(y,m,0).getDate();const hol=jpHolidays(y,m);const closed=[];
  for(let d=1;d<=days;d++){const w=new Date(y,m-1,d).getDay();const off=w===0||w===6||(m===12&&d>=29)||(m===1&&d<=3)||(m===8&&d>=13&&d<=16);if(off)closed.push(d)}
- return{y,m,holiday:hol,closed,
-  staff:(prev?prev.staff:[]).map(p=>({role:p.role,name:p.name,h:p.h,d:{}})),
-  users:(prev?prev.users:[]).map(u=>({group:u.group,name:u.name,start:u.start||'',u:{},r:{}}))}}
+ return{y,m,holiday:hol,closed,staff:[],users:[]}}
 function ensureMonth(y,m){let i=S.months.findIndex(x=>x.y===y&&x.m===m);if(i>=0)return i;
  const key=y*12+m;let at=S.months.length;for(let k=0;k<S.months.length;k++)if(S.months[k].y*12+S.months[k].m>key){at=k;break}
- const prev=S.months[Math.max(0,at-1)];S.months.splice(at,0,newMonth(y,m,prev));return at}
+ const prev=S.months[Math.max(0,at-1)];S.months.splice(at,0,newMonth(y,m,prev));materializeAll();return at}
 function snapshot(mo){S.archive=S.archive||{};S.archive[mo.y+'-'+mo.m]={at:new Date().toISOString(),month:JSON.parse(JSON.stringify(mo)),bill:(()=>{const b=billing(mo);return{total:b.total,burden:b.burden,claim:b.claim,days:b.T.days}})()}}
 function goToday(auto){const n=new Date();const y=n.getFullYear(),m=n.getMonth()+1,k=y+'-'+m;
  if(auto&&S.lastMonth&&S.lastMonth!==k){const [py,pm]=S.lastMonth.split('-').map(Number);const pi=S.months.findIndex(x=>x.y===py&&x.m===pm);if(pi>=0)snapshot(S.months[pi])}
@@ -191,6 +189,46 @@ function reflectAll(kind){const mo=S.months[S.mi];const later=laterMonths();if(!
   for(let d=1;d<=days;d++){if(isClosed(L,d))continue;const sd=(()=>{const w=wdOf(L,d);let n=0;for(let x=1;x<=d;x++)if(wdOf(L,x)===w)n++;let c=0;for(let x=1;x<=dim(mo);x++)if(wdOf(mo,x)===w&&++c===Math.min(n,Math.max(1,[...Array(dim(mo)).keys()].filter(k=>wdOf(mo,k+1)===w).length)))return x;return null})();if(!sd)continue;
    if(kind==='s'){const v=p.d[sd];if(v)q.d[d]=v;else delete q.d[d];cnt++}else{const v=p.u[sd];if(v&&v!=='欠席'){q.u[d]=v;if(p.r[sd])q.r[d]=p.r[sd];else delete q.r[d]}else if(!v){delete q.u[d];delete q.r[d]}cnt++}}})});
  alert('以降の'+later.length+'か月分に反映しました（'+cnt+'マス）。');ui()}
+
+// ---------- 名簿とパターン（毎月の自動作成）----------
+const pad2=n=>String(n).padStart(2,'0');
+const iso=(y,m,d)=>y+'-'+pad2(m)+'-'+pad2(d);
+function rActive(r,mo){const a=iso(mo.y,mo.m,1),b=iso(mo.y,mo.m,new Date(mo.y,mo.m,0).getDate());return (!r.from||r.from<=b)&&(!r.to||r.to>=a)}
+function inRange(r,mo,d){const k=iso(mo.y,mo.m,d);return (!r.from||r.from<=k)&&(!r.to||r.to>=k)}
+function expS(r,mo,d){if(!inRange(r,mo,d))return '';if(mo.closed.includes(d))return '休み';return (r.pat||{})[new Date(mo.y,mo.m-1,d).getDay()]||''}
+function expU(r,mo,d){if(!inRange(r,mo,d)||mo.closed.includes(d))return '';return (r.pat||{})[new Date(mo.y,mo.m-1,d).getDay()]||''}
+function expR(r,mo,d){return expU(r,mo,d)==='通所'?((r.rpat||{})[new Date(mo.y,mo.m-1,d).getDay()]||''):''}
+function monthFirst(mo){return iso(mo.y,mo.m,1)}
+function capture(){if(!S.roster)return;
+ S.months.forEach(mo=>{const days=new Date(mo.y,mo.m,0).getDate();
+  mo.staff.forEach(p=>{let r=S.roster.staff.find(x=>x.name===p.name);if(!r){r={name:p.name,role:p.role||'',h:p.h??null,from:S.months.indexOf(mo)===0?'':monthFirst(mo),to:'',pat:{}};S.roster.staff.push(r)}
+   const ex={};for(let d=1;d<=days;d++){const cell=p.d[d]||'';if(cell!==expS(r,mo,d))ex[d]=cell}p.ex=ex});
+  mo.users.forEach(p=>{let r=S.roster.users.find(x=>x.name===p.name);if(!r){r={name:p.name,group:p.group||'',start:p.start||'',from:S.months.indexOf(mo)===0?'':monthFirst(mo),to:'',pat:{},rpat:{}};S.roster.users.push(r)}
+   const ex={},exr={};for(let d=1;d<=days;d++){const c=p.u[d]||'';if(c!==expU(r,mo,d))ex[d]=c;const rr=p.r[d]||'';if(rr!==expR(r,mo,d))exr[d]=rr}p.ex=ex;p.exr=exr})})}
+function materializeAll(){if(!S.roster)return;
+ S.months.forEach(mo=>{const days=new Date(mo.y,mo.m,0).getDate();
+  const st=[];S.roster.staff.forEach(r=>{if(!rActive(r,mo))return;let p=mo.staff.find(x=>x.name===r.name)||{d:{},ex:{}};p.name=r.name;p.role=r.role;p.h=(r.h===''||r.h===undefined)?null:r.h;p.ex=p.ex||{};
+   for(let d=1;d<=days;d++){const v=(d in p.ex)?p.ex[d]:expS(r,mo,d);if(v)p.d[d]=v;else delete p.d[d]}st.push(p)});mo.staff=st;
+  const us=[];S.roster.users.forEach(r=>{if(!rActive(r,mo))return;let p=mo.users.find(x=>x.name===r.name)||{u:{},r:{},ex:{},exr:{}};p.name=r.name;p.group=r.group||'';p.start=r.start||'';p.ex=p.ex||{};p.exr=p.exr||{};
+   for(let d=1;d<=days;d++){const v=(d in p.ex)?p.ex[d]:expU(r,mo,d);if(v)p.u[d]=v;else delete p.u[d];const rv=(d in p.exr)?p.exr[d]:expR(r,mo,d);if(rv)p.r[d]=rv;else delete p.r[d]}us.push(p)});mo.users=us})}
+function rosterChange(fn){capture();fn();materializeAll()}
+function renameAll(kind,oldn,newn){S.months.forEach(m=>(kind==='staff'?m.staff:m.users).forEach(p=>{if(p.name===oldn)p.name=newn}))}
+function initRoster(){if(S.roster){capture();materializeAll();return}
+ const R={staff:[],users:[]};const mi=S.months;const last=mi.length-1;
+ const seen={staff:{},users:{}};
+ mi.forEach((mo,i)=>{['staff','users'].forEach(k=>mo[k].forEach(p=>{const o=seen[k][p.name]||(seen[k][p.name]={first:i,last:i,p});o.last=i;o.p=p}))});
+ const mode=(vals,total,th)=>{const c={};vals.forEach(v=>c[v]=(c[v]||0)+1);let best='',n=0;for(const k in c)if(c[k]>n){best=k;n=c[k]}return(best&&n/Math.max(total,1)>=th)?best:''};
+ const infer=(kind,name,f,l)=>{const pat={},rpat={};for(let w=0;w<7;w++){const vals=[],rv=[];let tot=0,tt=0;
+   for(let i=f;i<=l;i++){const mo=mi[i];const p=mo[kind].find(x=>x.name===name);if(!p)continue;for(let d=1;d<=new Date(mo.y,mo.m,0).getDate();d++){if(mo.closed.includes(d)||new Date(mo.y,mo.m-1,d).getDay()!==w)continue;
+     const v=kind==='staff'?(p.d[d]||''):(p.u[d]||'');vals.push(v);tot++;if(kind==='users'&&v==='通所'){rv.push(p.r[d]||'');tt++}}}
+   const m1=mode(vals,tot,0.6);if(m1&&((kind==='staff'&&m1.startsWith('出勤'))||(kind==='users'&&(m1==='通所'||m1==='在宅'))))pat[w]=m1;if(kind==='users'&&pat[w]==='通所'){const m2=mode(rv,tt,0.6);if(m2)rpat[w]=m2}}
+  return{pat,rpat}};
+ for(const nm in seen.staff){const o=seen.staff[nm],p=o.p,inf=infer('staff',nm,o.first,o.last);let pat=inf.pat;
+  if(!Object.keys(pat).length&&!mi.some(mo=>{const q=mo.staff.find(x=>x.name===nm);return q&&Object.keys(q.d).length})){const v=(p.role||'').includes('9-18')?'出勤(9-18)':(p.role||'').includes('9-17')?'出勤(9-17)':(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';[1,2,3,4,5].forEach(w=>pat[w]=v)}
+  R.staff.push({name:nm,role:p.role||'',h:p.h??null,from:o.first===0?'':monthFirst(mi[o.first]),to:o.last===last?'':iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()),pat})}
+ for(const nm in seen.users){const o=seen.users[nm],p=o.p,inf=infer('users',nm,o.first,o.last);
+  R.users.push({name:nm,group:p.group||'',start:p.start||'',from:o.first===0?'':monthFirst(mi[o.first]),to:o.last===last?'':iso(mi[o.last].y,mi[o.last].m,new Date(mi[o.last].y,mi[o.last].m,0).getDate()),pat:inf.pat,rpat:inf.rpat})}
+ S.roster=R;capture();materializeAll()}
 const dim=mo=>new Date(mo.y,mo.m,0).getDate();
 const wdOf=(mo,d)=>new Date(mo.y,mo.m-1,d).getDay();
 const isClosed=(mo,d)=>mo.closed.includes(d);
@@ -241,13 +279,14 @@ function billing(mo){
  return{rows,T,kz,kzr,totalUnits,total,burden,claim:total-burden}}
 // ---------- UI ----------
 function ui(){
+ capture();materializeAll();
  const mo=S.months[S.mi];
  $('#msel').innerHTML=S.months.map((m,i)=>`<option value="${i}" ${i===S.mi?'selected':''}>${m.y}年${m.m}月</option>`).join('');
- const tabs=[['shift','① 職員シフトと人員配置'],['use','② 利用日・送迎'],['bill','③ 請求金額'],['set','④ 設定']];
+ const tabs=[['shift','① 職員シフトと人員配置'],['use','② 利用日・送迎'],['roster','③ 名簿と基本パターン'],['bill','④ 請求金額'],['set','⑤ 設定']];
  $('#tabs').innerHTML=tabs.map(([k,v])=>`<button data-t="${k}" class="${S.tab===k?'on':''}">${v}</button>`).join('');
  const ob=document.getElementById('limbar');if(ob)ob.remove();if(window.LIC&&window.LIC.pl.max&&mo.users.length>window.LIC.pl.max){const b=document.createElement('div');b.id='limbar';b.style.cssText='background:#fde2df;border-bottom:1px solid #e8a39a;padding:6px 14px;font-size:13px;text-align:center;color:#c0392b';b.textContent='利用者数（'+mo.users.length+'人）が、ご契約の上限（'+window.LIC.pl.max+'人）を超えています。上位のプランへの変更をお願いします。';document.body.prepend(b)}
  const m=$('#main');const sx=(document.querySelector('#shiftcard .scroll')||{}).scrollLeft||0,sy=scrollY;
- m.innerHTML=({shift:vShift,use:vUse,staffing:vStaffing,bill:vBill,set:vSet})[S.tab](mo);
+ m.innerHTML=({shift:vShift,use:vUse,staffing:vStaffing,roster:vRoster,bill:vBill,set:vSet})[S.tab](mo);
  const sc=document.querySelector('#shiftcard .scroll');if(sc)sc.scrollLeft=sx;scrollTo(0,sy);
  save()}
 function head(mo,withTot){const days=dim(mo);let a='<tr><th class="nm">職種／区分</th><th class="nm" style="left:0">氏名</th>',b='<tr><th></th><th></th>';
@@ -256,7 +295,7 @@ function head(mo,withTot){const days=dim(mo);let a='<tr><th class="nm">職種／
  return a+'</tr>'+b+'</tr>'}
 function vShift(mo){return vStaffing(mo)+vShiftGrid(mo)}
 function vShiftGrid(mo){const days=dim(mo);
- let h=`<div class="card" id="shiftcard"><b>職員シフト</b>　<label style="margin-left:10px"><input type="checkbox" id="autoprop" ${S.autoProp?'checked':''}> この月を変えたら、以降の月にも自動で反映する</label>　<button data-reflect="s">この月の内容を以降の月に反映</button>　<span class="note">セルをクリックして選ぶと、上のカレンダーがすぐ変わります。緑＝出勤、灰＝休み。サービス管理責任者は人員配置に入りません。</span><div class="scroll" style="margin-top:8px"><table class="grid">${head(mo)}`;
+ let h=`<div class="card" id="shiftcard"><b>職員シフト</b>　<span class="note">セルをクリックして選ぶと、上のカレンダーがすぐ変わります。緑＝出勤、灰＝休み。サービス管理責任者は人員配置に入りません。</span><div class="scroll" style="margin-top:8px"><table class="grid">${head(mo)}`;
  mo.staff.forEach((p,i)=>{h+=`<tr><td class="role nm"><input class="n" data-role="${i}" value="${esc(p.role||'')}" placeholder="職種"></td><td class="nm"><input class="n" data-name="${i}" value="${esc(p.name)}"></td>`;
   for(let d=1;d<=days;d++){const st=p.d[d]||'';const cl=isClosed(mo,d)?' closed':'';const k='s-'+(st.startsWith('出勤(')?st.slice(3,-1):st);
    h+=`<td class="cell ${st?k:''}${cl}" data-kind="s" data-i="${i}" data-d="${d}">${st?st.replace('出勤(','').replace(')','').replace('出勤','出'):''}</td>`}
@@ -267,7 +306,7 @@ function vShiftGrid(mo){const days=dim(mo);
  h+=`</tr></table><p><button data-add="s">＋職員を追加</button>　<button data-bulk="s">一括入力</button>　<button data-bulk="s918">時間帯ごとに一律反映（土日祝も）</button>　<button data-copyprev="s">前月の同じ曜日をコピー</button>　<button id="csvins">CSVを取り込む（職員）</button>　<button id="csvts">CSVのひな形を保存</button></p><input type="file" id="csvfs" accept=".csv" hidden></div>`;
  return h}
 function vUse(mo){const days=dim(mo);
- let h=`<div class="card"><div class="note">通所／在宅／欠席を選びます（橙＝通所、青＝在宅、赤＝欠席）。右端の日付は、その人の「利用開始日」です（初期加算に使います）。灰色の列は休所。送迎は下の表で選びます。</div></div><div class="card"><label style="margin-left:10px"><input type="checkbox" id="autoprop" ${S.autoProp?'checked':''}> この月を変えたら、以降の月にも自動で反映する</label>　<button data-reflect="u">この月の内容を以降の月に反映</button><span class="note">　（欠席は、その月だけで、以降には反映しません）</span></div><div class="scroll card"><table class="grid">${head(mo)}`;
+ let h=`<div class="card"><div class="note">通所／在宅／欠席を選びます（橙＝通所、青＝在宅、赤＝欠席）。右端の日付は、その人の「利用開始日」です（初期加算に使います）。灰色の列は休所。送迎は下の表で選びます。</div></div><div class="scroll card"><table class="grid">${head(mo)}`;
  mo.users.forEach((u,i)=>{h+=`<tr><td class="role nm"><input class="n" data-grp="${i}" value="${esc(u.group||'')}" placeholder="利用パターン"></td><td class="nm"><input class="n" data-uname="${i}" value="${esc(u.name)}"></td>`;
   for(let d=1;d<=days;d++){const v=u.u[d]||'';const cl=isClosed(mo,d)?' closed':'';h+=`<td class="cell ${v?'u-'+v:''}${cl}" data-kind="u" data-i="${i}" data-d="${d}">${v?v[0]:''}</td>`}
   h+=`<td title="利用開始日（初期加算の計算に使います）"><input type="date" class="i" style="width:128px" data-ustart="${i}" value="${u.start||''}"></td><td><button data-rowfill="u,${i}">全日通所</button></td><td><button data-del="u,${i}">削除</button></td></tr>`});
@@ -312,6 +351,17 @@ function countUI(mo){const on=CAT.filter(c=>{const o=S.settings.cat[c.id];return
  return h+'</table>'}
 function catUI(){return '<table class="t cat"><tr><th>使う</th><th>加算の名前</th><th>単位</th><th>数え方</th><th>メモ（仮の値・要確認）</th></tr>'+CAT.map(c=>{const o=S.settings.cat[c.id]||{};
  return `<tr><td style="text-align:center"><input type="checkbox" data-con="${c.id}" ${o.on?'checked':''}></td><td>${esc(c.name)}</td><td><input class="i" style="width:70px" type="number" data-cun="${c.id}" value="${o.units??c.u}"></td><td>${PERL[c.per]}</td><td class="note" style="text-align:left">${esc(c.n)}</td></tr>`}).join('')+'</table>'}
+
+function vRoster(mo){const WDN=['月','火','水','木','金','土','日'],WI=[1,2,3,4,5,6,0];
+ const selS=(i,w,v)=>`<select data-rp="staff|${i}|${w}"><option value=""></option>${['出勤','出勤(9-16)','出勤(9-17)','出勤(9-18)','休み'].map(o=>`<option ${v===o?'selected':''} value="${o}">${o.replace('出勤(','').replace(')','')||o}</option>`).join('')}</select>`;
+ const selU=(i,w,v)=>`<select data-rp="users|${i}|${w}"><option value=""></option>${['通所','在宅'].map(o=>`<option ${v===o?'selected':''}>${o}</option>`).join('')}</select>`;
+ let h=`<div class="card"><b>名簿と基本パターン</b><p class="note">ここに、職員・利用者さんと、いつもの曜日のパターンを入れておくと、<b>毎月、自動で入ります</b>。職員が増えた・減ったとき、利用者さんが増えた・減ったときも、「開始日」「終了日」を入れるだけです。いつもと違う日だけ、①②のタブで直してください（その日だけ変わります）。</p></div>
+ <div class="card scroll"><b>職員</b><table class="t" style="margin-top:6px"><tr><th>氏名</th><th>職種</th><th>1日(h)</th><th>開始日</th><th>終了日</th>${WDN.map(w=>`<th>${w}</th>`).join('')}<th></th></tr>`;
+ S.roster.staff.forEach((r,i)=>{h+=`<tr><td><input class="i" data-rs="staff|${i}|name" value="${esc(r.name)}"></td><td><input class="i" style="width:190px" data-rs="staff|${i}|role" value="${esc(r.role||'')}"></td><td><input class="i" style="width:56px" type="number" step="0.5" data-rs="staff|${i}|h" value="${r.h??''}"></td><td><input class="i" style="width:128px" type="date" data-rs="staff|${i}|from" value="${r.from||''}"></td><td><input class="i" style="width:128px" type="date" data-rs="staff|${i}|to" value="${r.to||''}"></td>${WI.map(w=>`<td>${selS(i,w,(r.pat||{})[w])}</td>`).join('')}<td><button data-rdel="staff|${i}">削除</button></td></tr>`});
+ h+=`</table><p><button data-radd="staff">＋職員を追加</button></p></div>
+ <div class="card scroll"><b>利用者さん</b><table class="t" style="margin-top:6px"><tr><th>氏名</th><th>メモ</th><th>利用開始日</th><th>在籍の開始</th><th>終了日</th>${WDN.map(w=>`<th>${w}</th>`).join('')}<th>送迎</th><th></th></tr>`;
+ S.roster.users.forEach((r,i)=>{const rv=(r.rpat||{})[WI.find(w=>(r.pat||{})[w]==='通所')]||'';h+=`<tr><td><input class="i" data-rs="users|${i}|name" value="${esc(r.name)}"></td><td><input class="i" style="width:150px" data-rs="users|${i}|group" value="${esc(r.group||'')}"></td><td><input class="i" style="width:128px" type="date" data-rs="users|${i}|start" value="${r.start||''}"></td><td><input class="i" style="width:128px" type="date" data-rs="users|${i}|from" value="${r.from||''}"></td><td><input class="i" style="width:128px" type="date" data-rs="users|${i}|to" value="${r.to||''}"></td>${WI.map(w=>`<td>${selU(i,w,(r.pat||{})[w])}</td>`).join('')}<td><select data-rr="${i}"><option value=""></option>${['往復','迎えのみ','送りのみ'].map(o=>`<option ${rv===o?'selected':''}>${o}</option>`).join('')}</select></td><td><button data-rdel="users|${i}">削除</button></td></tr>`});
+ return h+`</table><p><button data-radd="users">＋利用者さんを追加</button></p><p class="note">「利用開始日」は初期加算に使います。「在籍の開始」「終了日」は、その月から（まで）名簿に出るための日付です。曜日のパターンは、休所の日には入りません。</p></div>`}
 function vBill(mo){const b=billing(mo),s=S.settings;
  let h=`<div class="cards"><div class="kpi"><small>今月の請求額（10割）</small><b>${yen(b.total)}</b><small>${b.T.days}利用日／${Math.round(b.totalUnits).toLocaleString()}単位</small></div>
  <div class="kpi"><small>利用者負担（合計）</small><b>${yen(b.burden)}</b><small>上限額は下の表で設定</small></div>
@@ -375,7 +425,7 @@ function openPop(td){const kind=td.dataset.kind,opts=kind==='s'?SH:kind==='u'?UO
  p.style.left=Math.min(r.left,innerWidth-140)+'px';p.style.top=Math.min(r.bottom,innerHeight-p.offsetHeight-8)+'px';popFor=td}
 document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.closest('#pop')&&t.dataset.v!==undefined){const td=popFor,i=+td.dataset.i,d=+td.dataset.d,k=td.dataset.kind;
-  const tgt=k==='s'?mo.staff[i].d:k==='u'?mo.users[i].u:mo.users[i].r;if(t.dataset.v)tgt[d]=t.dataset.v;else delete tgt[d];propagateCell(k==='s'?'s':'u',i,d,k==='r'?'r':'u',t.dataset.v);$('#pop').style.display='none';ui();return}
+  const tgt=k==='s'?mo.staff[i].d:k==='u'?mo.users[i].u:mo.users[i].r;if(t.dataset.v)tgt[d]=t.dataset.v;else delete tgt[d];$('#pop').style.display='none';ui();return}
  {const pp=$('#pop');if(pp)pp.style.display='none'}
  if(t.classList.contains('cell')){openPop(t);return}
  const gd=t.closest('[data-goday]');if(gd){setTimeout(()=>{const c=document.querySelector('td.cell[data-kind="s"][data-d="'+gd.dataset.goday+'"]');if(c){c.scrollIntoView({inline:'center',block:'center'});c.style.outline='3px solid #96505f'}},10);return}
@@ -383,10 +433,12 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.id==='prev'){S.mi=Math.max(0,S.mi-1);ui();return}if(t.id==='next'){if(S.mi>=S.months.length-1){const c=S.months[S.mi];const nm=c.m===12?1:c.m+1,ny=c.m===12?c.y+1:c.y;S.mi=ensureMonth(ny,nm)}else S.mi++;ui();return}
  if(t.dataset.rowfill){const[k,i]=t.dataset.rowfill.split(',');const days=dim(mo);
   if(k==='s'){const p=mo.staff[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!p.d[d])p.d[d]=(p.role||'').includes('9-16')?'出勤(9-16)':'出勤';}
-  else{const u=mo.users[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!u.u[d])u.u[d]='通所'}if(S.autoProp)reflectQuiet(k==='s'?'s':'u',+i);ui();return}
- if(t.dataset.del){const[k,i]=t.dataset.del.split(',');if(confirm('この行を削除しますか？（この月だけ）')){(k==='s'?mo.staff:mo.users).splice(+i,1);ui()}return}
- if(t.dataset.add==='u'&&window.LIC&&window.LIC.pl.max&&mo.users.length>=window.LIC.pl.max){alert('ご契約の利用者数の上限（'+window.LIC.pl.max+'人）です。上位のプランに変更すると、追加できます。');return}
- if(t.dataset.add){if(t.dataset.add==='s')mo.staff.push({role:'職業指導員（9-16）',name:'新しい職員',h:null,d:{}});else mo.users.push({group:'',name:'新しい利用者さん',u:{},r:{}});ui();return}
+  else{const u=mo.users[+i];for(let d=1;d<=days;d++)if(!isClosed(mo,d)&&!u.u[d])u.u[d]='通所'}ui();return}
+ if(t.dataset.del){const[k,i]=t.dataset.del.split(',');const nm=(k==='s'?mo.staff:mo.users)[+i].name;if(confirm('「'+nm+'」を、この月（'+mo.m+'月）の初めから外します。以降の月にも出なくなります（過去の月は残ります）。よいですか？')){rosterChange(()=>{const r=S.roster[k==='s'?'staff':'users'].find(x=>x.name===nm);const prevEnd=new Date(mo.y,mo.m-1,0);const e=iso(prevEnd.getFullYear(),prevEnd.getMonth()+1,prevEnd.getDate());if(r.from&&r.from>e){S.roster[k==='s'?'staff':'users'].splice(S.roster[k==='s'?'staff':'users'].indexOf(r),1)}else r.to=e});ui()}return}
+ if((t.dataset.add==='u')&&window.LIC&&window.LIC.pl.max&&mo.users.length>=window.LIC.pl.max){alert('ご契約の利用者数の上限（'+window.LIC.pl.max+'人）です。上位のプランに変更すると、追加できます。');return}
+ if(t.dataset.add){rosterChange(()=>{if(t.dataset.add==='s')S.roster.staff.push({name:'新しい職員'+(S.roster.staff.length+1),role:'職業指導員（9-16）',h:null,from:monthFirst(mo),to:'',pat:{1:'出勤(9-16)',2:'出勤(9-16)',3:'出勤(9-16)',4:'出勤(9-16)',5:'出勤(9-16)'}});else S.roster.users.push({name:'新しい利用者さん'+(S.roster.users.length+1),group:'',start:'',from:monthFirst(mo),to:'',pat:{},rpat:{}})});ui();return}
+ if(t.dataset.radd){rosterChange(()=>{if(t.dataset.radd==='staff')S.roster.staff.push({name:'新しい職員'+(S.roster.staff.length+1),role:'職業指導員（9-16）',h:null,from:monthFirst(mo),to:'',pat:{1:'出勤(9-16)',2:'出勤(9-16)',3:'出勤(9-16)',4:'出勤(9-16)',5:'出勤(9-16)'}});else{if(window.LIC&&window.LIC.pl.max&&S.roster.users.filter(r=>rActive(r,mo)).length>=window.LIC.pl.max){alert('ご契約の利用者数の上限（'+window.LIC.pl.max+'人）です。');return}S.roster.users.push({name:'新しい利用者さん'+(S.roster.users.length+1),group:'',start:'',from:monthFirst(mo),to:'',pat:{},rpat:{}})}});ui();return}
+ if(t.dataset.rdel){const [k,i]=t.dataset.rdel.split('|');const r=S.roster[k][+i];if(confirm('「'+r.name+'」を、すべての月から削除します（過去の月の記録も消えます）。辞めた日・利用をやめた日を入れる場合は、削除せず「終了日」を入れてください。よいですか？')){rosterChange(()=>{S.roster[k].splice(+i,1)});ui()}return}
  if(t.id==='aadd'){S.settings.adds.push({name:'新しい加算',units:0,per:'day'});ui();return}
  if(t.dataset.adel){S.settings.adds.splice(+t.dataset.adel,1);ui();return}
  if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
@@ -412,15 +464,19 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.id==='csvfs'){const r=new FileReader();r.onload=()=>importCsvS(r.result);r.readAsText(t.files[0],'utf-8');t.value='';return}
  if(t.id==='csvf'){const r=new FileReader();r.onload=()=>importCsv(r.result);r.readAsText(t.files[0],'utf-8');t.value='';return}
  if(t.id==='file'){const r=new FileReader();r.onload=()=>{try{S=JSON.parse(r.result);S.settings=Object.assign({},DEF,S.settings);ui()}catch(x){alert('読み込めませんでした')}};r.readAsText(t.files[0]);return}
- if(t.dataset.role!==undefined){mo.staff[+t.dataset.role].role=t.value;ui();return}
- if(t.dataset.name!==undefined){mo.staff[+t.dataset.name].name=t.value;ui();return}
- if(t.dataset.grp!==undefined){mo.users[+t.dataset.grp].group=t.value;ui();return}
- if(t.dataset.uname!==undefined){mo.users[+t.dataset.uname].name=t.value;ui();return}
+
+ if(t.dataset.role!==undefined){const nm=mo.staff[+t.dataset.role].name;rosterChange(()=>{S.roster.staff.find(x=>x.name===nm).role=t.value});ui();return}
+ if(t.dataset.name!==undefined){const old=mo.staff[+t.dataset.name].name,nw=t.value.trim()||old;rosterChange(()=>{S.roster.staff.find(x=>x.name===old).name=nw;renameAll('staff',old,nw)});ui();return}
+ if(t.dataset.grp!==undefined){const nm=mo.users[+t.dataset.grp].name;rosterChange(()=>{S.roster.users.find(x=>x.name===nm).group=t.value});ui();return}
+ if(t.dataset.uname!==undefined){const old=mo.users[+t.dataset.uname].name,nw=t.value.trim()||old;rosterChange(()=>{S.roster.users.find(x=>x.name===old).name=nw;renameAll('users',old,nw)});ui();return}
+ if(t.dataset.sh!==undefined){const nm=mo.staff[+t.dataset.sh].name,v=parseFloat(t.value);rosterChange(()=>{S.roster.staff.find(x=>x.name===nm).h=isNaN(v)?null:v});ui();return}
+ if(t.dataset.ustart!==undefined){const nm=mo.users[+t.dataset.ustart].name;rosterChange(()=>{S.roster.users.find(x=>x.name===nm).start=t.value||''});ui();return}
+ if(t.dataset.rs!==undefined){const [k,i,f]=t.dataset.rs.split('|');const r=S.roster[k][+i];const old=r.name;rosterChange(()=>{if(f==='name'){const nw=t.value.trim()||old;r.name=nw;renameAll(k,old,nw)}else if(f==='h'){const v=parseFloat(t.value);r.h=isNaN(v)?null:v}else r[f]=t.value});ui();return}
+ if(t.dataset.rp!==undefined){const [k,i,w]=t.dataset.rp.split('|');const r=S.roster[k][+i];rosterChange(()=>{r.pat=r.pat||{};if(t.value)r.pat[+w]=t.value;else delete r.pat[+w]});ui();return}
+ if(t.dataset.rr!==undefined){const r=S.roster.users[+t.dataset.rr];rosterChange(()=>{r.rpat={};if(t.value)for(let w=0;w<7;w++)r.rpat[w]=t.value});ui();return}
  if(t.dataset.set){const k=t.dataset.set;S.settings[k]=(k==='dayBasis')?t.value:+t.value;ui();return}
  if(t.dataset.city!==undefined){if(t.value!==''){S.settings.region=+t.value;S.settings.labor=57}ui();return}
  if(t.id==='autoprop'){S.autoProp=t.checked;save();return}
- if(t.dataset.sh!==undefined){const v=parseFloat(t.value);mo.staff[+t.dataset.sh].h=isNaN(v)?null:v;ui();return}
- if(t.dataset.ustart!==undefined){mo.users[+t.dataset.ustart].start=t.value||'';ui();return}
  if(t.dataset.kfrom){S.settings.kaizenFrom=t.value||'';ui();return}
  if(t.dataset.reg){S.settings.region=t.value===''?'':+t.value;ui();return}
  if(t.dataset.con){const c=S.settings.cat[t.dataset.con]=S.settings.cat[t.dataset.con]||{};c.on=t.checked;ui();return}
@@ -438,7 +494,7 @@ if(lk){const r=await verifyLicense(lk);if(r.ok)LIC=r;else if(r.expired){sessionS
 if(LIC&&LIC.left<=10&&RENEW_URL){try{const r=await fetch(RENEW_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:lk})});const j=await r.json();if(j.ok){const v=await verifyLicense(j.key);if(v.ok){localStorage.setItem('tp_license',j.key);LIC=v}}}catch(e){}}
 window.LIC=LIC;window.limitOver=()=>{const mo=S.months[S.mi];return LIC&&LIC.pl.max&&mo.users.length>LIC.pl.max};
 if(!sessionStorage.getItem('lico_in')){loginView()}else{
-goToday(true);try{if(localStorage.getItem('lico_mob'))document.body.classList.add('mob')}catch(e){}
+initRoster();goToday(true);try{if(localStorage.getItem('lico_mob'))document.body.classList.add('mob')}catch(e){}
 if(location.hash){const h=location.hash.slice(1).split(',');S.tab=h[0]==='staffing'?'shift':h[0];if(h[1])S.mi=+h[1];}
 ui();
 if(LIC&&LIC.left<=7){const b=document.createElement('div');b.style.cssText='background:#fff4d6;border-bottom:1px solid #e6c36a;padding:6px 14px;font-size:13px;text-align:center';b.textContent='ライセンスの期限まであと'+Math.max(0,LIC.left)+'日です（'+LIC.pl.exp+'）。更新のご案内をご確認ください。';document.body.prepend(b)}
