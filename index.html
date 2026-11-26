@@ -124,6 +124,25 @@ function snapshot(mo){S.archive=S.archive||{};S.archive[mo.y+'-'+mo.m]={at:new D
 function goToday(auto){const n=new Date();const y=n.getFullYear(),m=n.getMonth()+1,k=y+'-'+m;
  if(auto&&S.lastMonth&&S.lastMonth!==k){const [py,pm]=S.lastMonth.split('-').map(Number);const pi=S.months.findIndex(x=>x.y===py&&x.m===pm);if(pi>=0)snapshot(S.months[pi])}
  S.mi=ensureMonth(y,m);S.lastMonth=k;save()}
+
+// ---------- 前月コピー・CSV取り込み ----------
+function srcDay(mo,prev,d){const w=wdOf(mo,d);let n=0;for(let x=1;x<=d;x++)if(wdOf(mo,x)===w)n++;
+ const list=[];for(let x=1;x<=dim(prev);x++)if(wdOf(prev,x)===w)list.push(x);return list.length?list[Math.min(n,list.length)-1]:null}
+function copyPrev(kind){const mo=S.months[S.mi],prev=S.months[S.mi-1];if(!prev){alert('前の月のデータがありません');return}
+ if(!confirm('前月（'+prev.y+'年'+prev.m+'月）の同じ曜日の内容を、この月の空いているところに入れます。入力済みのところは変えません。よいですか？'))return;
+ let cnt=0;
+ const days=dim(mo);
+ if(kind==='s'){mo.staff.forEach(p=>{const q=prev.staff.find(x=>x.name===p.name);if(!q)return;for(let d=1;d<=days;d++){if(isClosed(mo,d)||p.d[d])continue;const sd=srcDay(mo,prev,d);if(sd&&q.d[sd]){p.d[d]=q.d[sd];cnt++}}})}
+ else{mo.users.forEach(u=>{const q=prev.users.find(x=>x.name===u.name);if(!q)return;if(!u.start&&q.start)u.start=q.start;for(let d=1;d<=days;d++){if(isClosed(mo,d))continue;const sd=srcDay(mo,prev,d);if(!sd)continue;
+  if(!u.u[d]&&q.u[sd]&&q.u[sd]!=='欠席'){u.u[d]=q.u[sd];cnt++}if(!u.r[d]&&q.r[sd]&&u.u[d]){u.r[d]=q.r[sd]}}})}
+ alert(cnt+'件を入れました。変わるところだけ、直してください。');ui()}
+function csvTemplate(){return '\ufeff氏名,日付,区分,送迎\n利用者A,2026-11-02,通所,往復\n利用者A,2026-11-03,在宅,\n利用者B,2026-11-02,欠席,\n'}
+function importCsv(txt){const mo=S.months[S.mi];const L=txt.replace(/^\ufeff/,'').split(/\r?\n/).filter(x=>x.trim());let ok=0,ng=0;
+ L.slice(1).forEach(l=>{const c=l.split(',').map(x=>x.trim());if(c.length<3){ng++;return}const m=c[1].match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);if(!m||+m[1]!==mo.y||+m[2]!==mo.m){ng++;return}
+  const d=+m[3];if(!['通所','在宅','欠席'].includes(c[2])){ng++;return}let u=mo.users.find(x=>x.name===c[0]);
+  if(!u){if(window.LIC&&window.LIC.pl.max&&mo.users.length>=window.LIC.pl.max){ng++;return}u={group:'',name:c[0],start:'',u:{},r:{}};mo.users.push(u)}
+  u.u[d]=c[2];if(c[3]&&['往復','迎えのみ','送りのみ'].includes(c[3]))u.r[d]=c[3];ok++});
+ alert(ok+'件を取り込みました。'+(ng?'（読めなかった行：'+ng+'件。日付が違う月・区分が違う・形が違う行です）':''));ui()}
 const dim=mo=>new Date(mo.y,mo.m,0).getDate();
 const wdOf=(mo,d)=>new Date(mo.y,mo.m-1,d).getDay();
 const isClosed=(mo,d)=>mo.closed.includes(d);
@@ -197,7 +216,7 @@ function vShiftGrid(mo){const days=dim(mo);
  h+=`<tr class="sum"><th class="nm" colspan="2">出勤人数（サビ管除く）</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':!x.ok?'ng':''}">${isClosed(mo,d)?'':x.cnt}</td>`}
  h+=`</tr><tr class="sum"><th class="nm" colspan="2">勤務時間 合計(h)</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':f1(x.h)}</td>`}
  h+=`</tr><tr class="sum"><th class="nm" colspan="2">あと何時間足りない</th>`;for(let d=1;d<=days;d++){const x=dayStats(mo,d);h+=`<td class="${isClosed(mo,d)?'closed':!x.ok?'ng':'okc'}">${isClosed(mo,d)?'':x.ok?'○':(x.lackH>0?x.lackH:'人')}</td>`}
- h+=`</tr></table><p><button data-add="s">＋職員を追加</button></p></div>`;
+ h+=`</tr></table><p><button data-add="s">＋職員を追加</button>　<button data-copyprev="s">前月の同じ曜日をコピー</button></p></div>`;
  return h}
 function vUse(mo){const days=dim(mo);
  let h=`<div class="card"><div class="note">通所／在宅／欠席を選びます（橙＝通所、青＝在宅、赤＝欠席）。右端の日付は、その人の「利用開始日」です（初期加算に使います）。灰色の列は休所。送迎は下の表で選びます。</div></div><div class="scroll card"><table class="grid">${head(mo)}`;
@@ -207,7 +226,7 @@ function vUse(mo){const days=dim(mo);
  h+=`<tr class="sum"><th class="nm" colspan="2">通所</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':mo.users.filter(u=>u.u[d]==='通所').length}</td>`;
  h+=`</tr><tr class="sum"><th class="nm" colspan="2">在宅</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':mo.users.filter(u=>u.u[d]==='在宅').length}</td>`;
  h+=`</tr><tr class="sum"><th class="nm" colspan="2">利用人数</th>`;for(let d=1;d<=days;d++)h+=`<td class="${isClosed(mo,d)?'closed':''}">${isClosed(mo,d)?'':dayStats(mo,d).users}</td>`;
- h+=`</tr></table><p><button data-add="u">＋利用者さんを追加</button></p></div>`;
+ h+=`</tr></table><p><button data-add="u">＋利用者さんを追加</button>　<button data-copyprev="u">前月の同じ曜日をコピー</button>　<button id="csvin">CSVを取り込む</button>　<button id="csvt">CSVのひな形を保存</button></p><input type="file" id="csvf" accept=".csv" hidden></div>`;
  h+=`<div class="scroll card"><b>送迎</b>（往復＝迎え＋送り／迎えのみ／送りのみ）<table class="grid" style="margin-top:6px">${head(mo)}`;
  mo.users.forEach((u,i)=>{h+=`<tr><td class="role nm">送迎</td><td class="nm">${esc(u.name)}</td>`;
   for(let d=1;d<=days;d++){const v=u.r[d]||'';const cl=isClosed(mo,d)?' closed':'';h+=`<td class="cell ${v&&v!=='なし'?'s-出勤':''}${cl}" data-kind="r" data-i="${i}" data-d="${d}">${v==='往復'?'往':v==='迎えのみ'?'迎':v==='送りのみ'?'送':''}</td>`}h+='</tr>'});
@@ -325,6 +344,9 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.id==='csv'){const b=billing(mo);const L=['利用者,通所,在宅,利用日数,送迎片道,単位数,金額(10割),負担上限,利用者負担'];b.rows.forEach(r=>L.push([r.name,r.tsu,r.zai,r.use,r.trips,Math.round(r.units),r.share,r.cap,r.burden].join(',')));L.push(['合計','','',b.T.days,b.T.trips,Math.round(b.T.units),b.total,'',b.burden].join(','));
   dl('﻿'+L.join('\n'),`LICO_請求_${mo.y}年${mo.m}月.csv`,'text/csv');return}
  if(t.dataset.applyprice){const r=S.settings.region,l=S.settings.labor;if(r===''||!l){alert('地域区分と人件費割合を入れてください');return}S.settings.unitPrice=Math.round(10*(1+(r/100)*(l/100))*100)/100;ui();return}
+ if(t.dataset.copyprev){copyPrev(t.dataset.copyprev);return}
+ if(t.id==='csvin'){$('#csvf').click();return}
+ if(t.id==='csvt'){dl(csvTemplate(),'利用日取り込みひな形.csv','text/csv');return}
  if(t.id==='qrb'){$('#qrm').style.display='flex';return}
  if(t.id==='qrc'||t.id==='qrm'){$('#qrm').style.display='none';return}
  if(t.id==='mobt'){document.body.classList.toggle('mob');try{localStorage.setItem('lico_mob',document.body.classList.contains('mob')?'1':'')}catch(e){}return}
@@ -335,6 +357,7 @@ document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.id==='reset'){if(confirm('入力したデータをすべて消して、最初の勤務表の状態に戻します。よいですか？')){localStorage.removeItem(KEY);location.reload()}}});
 document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.id==='msel'){S.mi=+t.value;ui();return}
+ if(t.id==='csvf'){const r=new FileReader();r.onload=()=>importCsv(r.result);r.readAsText(t.files[0],'utf-8');t.value='';return}
  if(t.id==='file'){const r=new FileReader();r.onload=()=>{try{S=JSON.parse(r.result);S.settings=Object.assign({},DEF,S.settings);ui()}catch(x){alert('読み込めませんでした')}};r.readAsText(t.files[0]);return}
  if(t.dataset.role!==undefined){mo.staff[+t.dataset.role].role=t.value;ui();return}
  if(t.dataset.name!==undefined){mo.staff[+t.dataset.name].name=t.value;ui();return}
