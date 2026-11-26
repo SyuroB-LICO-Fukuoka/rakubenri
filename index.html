@@ -70,7 +70,7 @@ const RENEW_URL='';   // 自動発行のWorkerを公開したら、そのURL（�
 const SALT='timepop-lico-';
 const KEY='lico_kanri_v1';
 const DEF={ftWeekH:40,ftDays:5,baseUsers:18,ratio:10,dayBasis:'base',minStaff:2,h916:6,days916:5,
- region:10,labor:57,baseUnits:580,unitPrice:10.57,kaizen:0,rideUnits:21,
+ region:10,labor:57,baseUnits:580,unitPrice:10.57,kaizen:0,kaizenFrom:'',rideUnits:21,
  adds:[],caps:{}};
 const CAT=[
  {id:'sen3',name:'福祉専門職員配置等加算（Ⅰ）',u:15,per:'day',n:'常勤の福祉専門職員が35%以上'},
@@ -160,12 +160,12 @@ function billing(mo){
    if(c.per==='day')units+=un*use;else if(c.per==='zai')units+=un*zai;else if(c.per==='count')units+=un*(+(S.counts[mo.y+'-'+mo.m+'|'+u.name+'|'+c.id])||0)});
   rows.push({name:u.name,tsu,zai,use,trips,units});T.days+=use;T.trips+=trips;T.units+=units});
  let once=0;CAT.forEach(c=>{const o=s.cat[c.id];if(o&&o.on&&c.per==='once'&&T.days>0)once+=(o.units??c.u)});T.units+=once;
- const kz=T.units*s.kaizen/100;const totalUnits=T.units+kz;
+ const kzr=(s.kaizenFrom&&(mo.y+'-'+String(mo.m).padStart(2,'0'))<s.kaizenFrom)?0:s.kaizen;const kz=T.units*kzr/100;const totalUnits=T.units+kz;
  const total=Math.floor(totalUnits*s.unitPrice);
  // 利用者負担（上限額：設定。0＝負担なし）：10%と上限の小さいほう
- let burden=0;rows.forEach(r=>{const share=Math.floor(r.units*(1+s.kaizen/100)*s.unitPrice);const tenth=Math.floor(share/10);
+ let burden=0;rows.forEach(r=>{const share=Math.floor(r.units*(1+kzr/100)*s.unitPrice);const tenth=Math.floor(share/10);
   const cap=(s.caps[mo.y+'-'+mo.m+'|'+r.name]??s.caps[r.name]??0);r.share=share;r.cap=cap;r.burden=cap===0?0:Math.min(tenth,cap);burden+=r.burden});
- return{rows,T,kz,totalUnits,total,burden,claim:total-burden}}
+ return{rows,T,kz,kzr,totalUnits,total,burden,claim:total-burden}}
 // ---------- UI ----------
 function ui(){
  const mo=S.months[S.mi];
@@ -247,7 +247,7 @@ function vBill(mo){const b=billing(mo),s=S.settings;
  b.rows.forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${r.tsu}</td><td>${r.zai}</td><td>${r.use}</td><td>${r.trips}</td><td>${Math.round(r.units).toLocaleString()}</td><td>${yen(r.share)}</td><td><input class="i" style="width:80px" type="number" data-cap="${esc(r.name)}" value="${r.cap}"></td><td>${yen(r.burden)}</td></tr>`});
  h+=`<tr><th>合計</th><th></th><th></th><th>${b.T.days}</th><th>${b.T.trips}</th><th>${Math.round(b.T.units).toLocaleString()}</th><th>${yen(b.total)}</th><th></th><th>${yen(b.burden)}</th></tr></table>
 <div class="scroll">${countUI(mo)}</div>
- <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）${s.kaizen?'×（1＋処遇改善'+s.kaizen+'%）':'（処遇改善は入れていません）'}×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・単価は仮の値です。処遇改善は届出をしたら率を入れてください。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
+ <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）${b.kzr?'×（1＋処遇改善'+b.kzr+'%）':'（この月は処遇改善を入れていません）'}×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・単価は仮の値です。処遇改善は届出をしたら率を入れてください。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
  <p><button id="csv">この月の請求をCSVで保存</button></p></div>`;return h}
 function archUI(){const a=S.archive||{};const ks=Object.keys(a).sort();if(!ks.length)return '<p class="note">まだ保管された月はありません。</p>';
  return '<table class="t"><tr><th>月</th><th>保管した日時</th><th>請求額(10割)</th><th></th></tr>'+ks.map(k=>`<tr><td>${k.replace('-','年')}月</td><td>${a[k].at.slice(0,16).replace('T',' ')}</td><td>${yen(a[k].bill.total)}</td><td><button data-adl="${k}">ダウンロード</button></td></tr>`).join('')+'</table>'}
@@ -256,7 +256,7 @@ function vSet(mo){const s=S.settings;
  return `<div class="card"><b>人員配置</b><br><br>${F('ftWeekH','常勤の週の勤務時間(h)')}${F('ftDays','常勤の週の勤務日数')}${F('baseUsers','利用者数（基準）')}${F('minStaff','1日の最低出勤人数')}${F('h916','「9〜16」の人の1日(h)')}${F('days916','その人の週の出勤日数')}
  <label class="f">人員配置の区分（今の区分）<select data-set="ratio"><option value="10" ${s.ratio==10?'selected':''}>10:1（区分Ⅲ）</option><option value="7.5" ${s.ratio==7.5?'selected':''}>7.5:1（区分Ⅱ）</option></select></label>
  <label class="f">日ごとの必要時間に使う利用者数<select data-set="dayBasis"><option value="base" ${s.dayBasis==='base'?'selected':''}>基準の人数</option><option value="actual" ${s.dayBasis==='actual'?'selected':''}>その日の利用人数</option></select></label></div>
- <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)（届出していなければ0）','number','0.1')}<div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
+ <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)（届出していなければ0）','number','0.1')}<label class="f">処遇改善を入れ始める月<input class="i" type="month" data-kfrom="1" value="${s.kaizenFrom||''}"></label><div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
  <label class="f">市区町村（確認済みのもの）<select data-city="1"><option value="">選ばない</option>${CITIES.map(c=>`<option value="${c[1]}">${c[0]}（${c[1]}%）</option>`).join('')}</select></label>
  <label class="f">地域区分（上乗せ割合）<select data-reg="1"><option value="">選ぶ</option>${[['1級地',20],['2級地',16],['3級地',15],['4級地',12],['5級地',10],['6級地',6],['7級地',3],['その他',0]].map(([n,r])=>`<option value="${r}" ${String(s.region)===String(r)&&s.region!==''?'selected':''}>${n}（${r}%）</option>`).join('')}</select></label>
  <label class="f">人件費割合（%）<input class="i" type="number" data-set="labor" value="${s.labor}"></label>
@@ -336,6 +336,7 @@ document.addEventListener('change',e=>{const t=e.target,mo=S.months[S.mi];
  if(t.dataset.uname!==undefined){mo.users[+t.dataset.uname].name=t.value;ui();return}
  if(t.dataset.set){const k=t.dataset.set;S.settings[k]=(k==='dayBasis')?t.value:+t.value;ui();return}
  if(t.dataset.city!==undefined){if(t.value!==''){S.settings.region=+t.value;S.settings.labor=57}ui();return}
+ if(t.dataset.kfrom){S.settings.kaizenFrom=t.value||'';ui();return}
  if(t.dataset.reg){S.settings.region=t.value===''?'':+t.value;ui();return}
  if(t.dataset.con){const c=S.settings.cat[t.dataset.con]=S.settings.cat[t.dataset.con]||{};c.on=t.checked;ui();return}
  if(t.dataset.cun){const c=S.settings.cat[t.dataset.cun]=S.settings.cat[t.dataset.cun]||{};c.units=+t.value||0;ui();return}
