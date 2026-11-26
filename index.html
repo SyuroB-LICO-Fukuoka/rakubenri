@@ -66,6 +66,7 @@ const SEED=[{"y": 2026, "m": 11, "holiday": [3, 23], "closed": [1, 7, 8, 14, 15,
 const ACCTS={"admin": "863399ec80d5e8fc45c2240fea7445b0bc7970d484c7b5cb83af72b39334db66", "sabikan": "00435d538bfb43a4e01d088de28aa192816b32f02877fccde6c85887ef9aea31"};
 const PUBJWK={"kty": "EC", "crv": "P-256", "x": "uhYQXp6PJw9duzk4l1R0VEBw-mU6_xXxnlXsEs2NmmU", "y": "pnMq_MDpKziiCdTbDFORk2uRyWwrwy0EdUemy9ls0K4"};
 const DOCS={"tos": {"t": "利用規約（ひな形）", "b": "【重要】この文書はひな形です。販売前に、専門家（弁護士など）の確認を受けてください。\n\n第1条（サービスの内容）\n「らくべんりー」（以下「本サービス」）は、就労継続支援事業所などの職員シフト・利用日・人員配置・請求額の目安を管理するための、ブラウザで使うソフトです。\n\n第2条（計算結果について）\n本サービスの人員配置・請求額などの計算は、目安です。基本単位、加算、単価、地域区分などの値は、利用者が自分で確認し、設定してください。実際の請求（国保連合会への請求など）や、指定基準を満たしているかの最終確認は、利用者（事業所）の責任で行ってください。計算結果によって生じた損害について、提供者は責任を負いません。\n\n第3条（データの保管）\n入力されたデータは、利用者の端末のブラウザ内にのみ保存されます。提供者は、これらのデータを受け取りません。端末の故障、ブラウザのデータ消去などでデータが失われることがあるため、利用者は定期的にバックアップを保存してください。\n\n第4条（料金・期間）\n利用料金は月額とし、ライセンスキーの有効期限まで利用できます。期限後は、更新のライセンスキーを入力するまで利用できません。\n\n第5条（禁止事項）\nライセンスキーの第三者への譲渡・共有、本サービスの複製・再販売、解析による不正な利用を禁止します。\n\n第6条（変更・終了）\n提供者は、報酬改定などに応じて内容を変更し、または本サービスを終了することがあります。\n\n（制定日：2026年11月26日／提供者：LICO（運営：株式会社かむらっど））"}, "pp": {"t": "プライバシーについて（ひな形）", "b": "【重要】この文書はひな形です。販売前に、専門家の確認を受けてください。\n\n1. 本サービスは、入力された職員・利用者の氏名や勤務・利用日などのデータを、提供者のサーバーに送信しません。データは、利用者の端末のブラウザ内にだけ保存されます。\n2. ライセンスキーの確認は、端末のブラウザ内で行い、キーの内容（事業所名・有効期限）を外部に送りません。\n3. 購入手続きの際にお預かりするお名前・メールアドレス・お支払い情報は、決済サービス（Stripe）と提供者が、契約の管理とライセンスキーの送付のためにのみ使います。\n4. 利用者の氏名など、個人情報を入力する場合は、事業所の個人情報の取扱いの規程に従い、端末の管理（パスワード、画面ロック、紛失対策）を行ってください。\n5. お問い合わせ先：LICO（運営：株式会社かむらっど）"}};
+const RENEW_URL='';   // 自動発行のWorkerを公開したら、そのURL（…/renew）を入れる
 const SALT='timepop-lico-';
 const KEY='lico_kanri_v1';
 const DEF={ftWeekH:40,ftDays:5,baseUsers:18,ratio:10,dayBasis:'base',minStaff:2,h916:6,days916:5,
@@ -302,7 +303,7 @@ function openPop(td){const kind=td.dataset.kind,opts=kind==='s'?SH:kind==='u'?UO
 document.addEventListener('click',e=>{const t=e.target;const mo=S.months[S.mi];
  if(t.closest('#pop')&&t.dataset.v!==undefined){const td=popFor,i=+td.dataset.i,d=+td.dataset.d,k=td.dataset.kind;
   const tgt=k==='s'?mo.staff[i].d:k==='u'?mo.users[i].u:mo.users[i].r;if(t.dataset.v)tgt[d]=t.dataset.v;else delete tgt[d];$('#pop').style.display='none';ui();return}
- $('#pop').style.display='none';
+ {const pp=$('#pop');if(pp)pp.style.display='none'}
  if(t.classList.contains('cell')){openPop(t);return}
  const gd=t.closest('[data-goday]');if(gd){setTimeout(()=>{const c=document.querySelector('td.cell[data-kind="s"][data-d="'+gd.dataset.goday+'"]');if(c){c.scrollIntoView({inline:'center',block:'center'});c.style.outline='3px solid #96505f'}},10);return}
  if(t.dataset.t){S.tab=t.dataset.t;ui();return}
@@ -348,6 +349,7 @@ function dl(txt,name,type){const a=document.createElement('a');a.href=URL.create
 const lk=localStorage.getItem('tp_license');let LIC=null;
 if(!sessionStorage.getItem('lico_in')&&lk){const r=await verifyLicense(lk);if(r.ok)sessionStorage.setItem('lico_in','1');else if(r.expired){expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
 if(lk){const r=await verifyLicense(lk);if(r.ok)LIC=r;else if(r.expired){sessionStorage.removeItem('lico_in');expiredView(r.why+'。更新したライセンスキーを入れてください');return}}
+if(LIC&&LIC.left<=10&&RENEW_URL){try{const r=await fetch(RENEW_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:lk})});const j=await r.json();if(j.ok){const v=await verifyLicense(j.key);if(v.ok){localStorage.setItem('tp_license',j.key);LIC=v}}}catch(e){}}
 window.LIC=LIC;window.limitOver=()=>{const mo=S.months[S.mi];return LIC&&LIC.pl.max&&mo.users.length>LIC.pl.max};
 if(!sessionStorage.getItem('lico_in')){loginView()}else{
 goToday(true);try{if(localStorage.getItem('lico_mob'))document.body.classList.add('mob')}catch(e){}
