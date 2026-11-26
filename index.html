@@ -70,7 +70,7 @@ const RENEW_URL='';   // 自動発行のWorkerを公開したら、そのURL（�
 const SALT='timepop-lico-';
 const KEY='lico_kanri_v1';
 const DEF={ftWeekH:40,ftDays:5,baseUsers:18,ratio:10,dayBasis:'base',minStaff:2,h916:6,days916:5,
- region:10,labor:57,baseUnits:580,unitPrice:10.57,kaizen:8,rideUnits:21,
+ region:10,labor:57,baseUnits:580,unitPrice:10.57,kaizen:0,rideUnits:21,
  adds:[],caps:{}};
 const CAT=[
  {id:'sen3',name:'福祉専門職員配置等加算（Ⅰ）',u:15,per:'day',n:'常勤の福祉専門職員が35%以上'},
@@ -247,7 +247,7 @@ function vBill(mo){const b=billing(mo),s=S.settings;
  b.rows.forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${r.tsu}</td><td>${r.zai}</td><td>${r.use}</td><td>${r.trips}</td><td>${Math.round(r.units).toLocaleString()}</td><td>${yen(r.share)}</td><td><input class="i" style="width:80px" type="number" data-cap="${esc(r.name)}" value="${r.cap}"></td><td>${yen(r.burden)}</td></tr>`});
  h+=`<tr><th>合計</th><th></th><th></th><th>${b.T.days}</th><th>${b.T.trips}</th><th>${Math.round(b.T.units).toLocaleString()}</th><th>${yen(b.total)}</th><th></th><th>${yen(b.burden)}</th></tr></table>
 <div class="scroll">${countUI(mo)}</div>
- <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）×（1＋処遇改善${s.kaizen}%）×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・処遇改善率・単価は仮の値です。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
+ <p class="note">計算：（利用日数×基本${s.baseUnits}単位＋送迎${s.rideUnits}単位×片道回数＋その他の加算）${s.kaizen?'×（1＋処遇改善'+s.kaizen+'%）':'（処遇改善は入れていません）'}×単価${s.unitPrice}円。端数は円未満切り捨て。負担上限0円＝負担なし（生活保護・非課税など）。<br><span class="warn">※基本単位・送迎加算・単価は仮の値です。処遇改善は届出をしたら率を入れてください。実際の指定内容・福岡市の単価と合わせて、設定タブで直してください。欠席時対応加算など、ほかの加算は設定タブに追加できます。</span></p>
  <p><button id="csv">この月の請求をCSVで保存</button></p></div>`;return h}
 function archUI(){const a=S.archive||{};const ks=Object.keys(a).sort();if(!ks.length)return '<p class="note">まだ保管された月はありません。</p>';
  return '<table class="t"><tr><th>月</th><th>保管した日時</th><th>請求額(10割)</th><th></th></tr>'+ks.map(k=>`<tr><td>${k.replace('-','年')}月</td><td>${a[k].at.slice(0,16).replace('T',' ')}</td><td>${yen(a[k].bill.total)}</td><td><button data-adl="${k}">ダウンロード</button></td></tr>`).join('')+'</table>'}
@@ -256,13 +256,13 @@ function vSet(mo){const s=S.settings;
  return `<div class="card"><b>人員配置</b><br><br>${F('ftWeekH','常勤の週の勤務時間(h)')}${F('ftDays','常勤の週の勤務日数')}${F('baseUsers','利用者数（基準）')}${F('minStaff','1日の最低出勤人数')}${F('h916','「9〜16」の人の1日(h)')}${F('days916','その人の週の出勤日数')}
  <label class="f">人員配置の区分（今の区分）<select data-set="ratio"><option value="10" ${s.ratio==10?'selected':''}>10:1（区分Ⅲ）</option><option value="7.5" ${s.ratio==7.5?'selected':''}>7.5:1（区分Ⅱ）</option></select></label>
  <label class="f">日ごとの必要時間に使う利用者数<select data-set="dayBasis"><option value="base" ${s.dayBasis==='base'?'selected':''}>基準の人数</option><option value="actual" ${s.dayBasis==='actual'?'selected':''}>その日の利用人数</option></select></label></div>
- <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)','number','0.1')}<div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
+ <div class="card"><b>請求（仮の値。要確認）</b><br><br>${F('baseUnits','基本の単位数（1日）')}${F('unitPrice','1単位の単価(円)','number','0.01')}${F('kaizen','処遇改善の加算率(%)（届出していなければ0）','number','0.1')}<div style="margin:6px 0 14px;padding:10px;border:1px dashed var(--line);border-radius:8px"><b>地域区分から単価を計算（目安）</b><br>
  <label class="f">市区町村（確認済みのもの）<select data-city="1"><option value="">選ばない</option>${CITIES.map(c=>`<option value="${c[1]}">${c[0]}（${c[1]}%）</option>`).join('')}</select></label>
  <label class="f">地域区分（上乗せ割合）<select data-reg="1"><option value="">選ぶ</option>${[['1級地',20],['2級地',16],['3級地',15],['4級地',12],['5級地',10],['6級地',6],['7級地',3],['その他',0]].map(([n,r])=>`<option value="${r}" ${String(s.region)===String(r)&&s.region!==''?'selected':''}>${n}（${r}%）</option>`).join('')}</select></label>
  <label class="f">人件費割合（%）<input class="i" type="number" data-set="labor" value="${s.labor}"></label>
  <p class="note">単価＝10円×（1＋上乗せ割合×人件費割合）。初期値は福岡市（5級地＝10%）と、就労継続支援の人件費割合57%で、10.57円になります（複数の解説サイトで一致。最終確認は告示：平成18年厚生労働省告示第539号）。<b class="warn">福岡市以外の事業所は、ご自身の地域区分に直してください。</b>
  現在の計算値：<b>${s.region===''||!s.labor?'—':(10*(1+(+s.region/100)*(s.labor/100))).toFixed(2)+'円'}</b>　<button data-applyprice="1">この値を単価に入れる</button></p></div>${F('rideUnits','送迎加算（片道・単位）','number')}
- <p class="note">最初の半年は580単位（所定990×984/1000を想定）、福岡市の単価10.57円は収支計画v14と同じ。送迎加算・処遇改善率は仮。</p>
+ <p class="note">最初の半年は580単位（所定990×984/1000を想定）、福岡市の単価10.57円は収支計画v14と同じ。送迎加算は仮。処遇改善は、福祉・介護職員等処遇改善加算の届出をして算定できるようになったら、その加算率を入れてください（届出前は0）。</p>
  <b>加算を選ぶ</b>（チェックを入れた加算が請求に入ります）<div class="scroll">${catUI()}</div><br><b>その他の加算（自分で追加）</b><table class="t"><tr><th>名前</th><th>単位</th><th>数え方</th><th></th></tr>${s.adds.map((a,i)=>`<tr><td><input class="i" data-an="${i}" value="${esc(a.name)}"></td><td><input class="i" style="width:70px" type="number" data-au="${i}" value="${a.units}"></td><td><select data-ap="${i}"><option value="day" ${a.per==='day'?'selected':''}>利用日ごと</option><option value="trip" ${a.per==='trip'?'selected':''}>送迎1回ごと</option><option value="month" ${a.per==='month'?'selected':''}>利用者ごとに月1回</option></select></td><td><button data-adel="${i}">削除</button></td></tr>`).join('')}</table>
  <p><button id="aadd">＋加算を追加</button></p></div>
  <div class="card"><b>毎月の保管</b><p class="note">月が変わると、前の月が自動で保管されます（この月の勤務・利用日・請求額のそのときの記録）。入力した月のデータは、いつでも月の選択から開けます。</p>${archUI()}</div>
